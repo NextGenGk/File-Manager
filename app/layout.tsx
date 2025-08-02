@@ -5,6 +5,7 @@ import {
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/navbar'
+import UserSyncer from '@/components/UserSyncer'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,9 +28,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-      <ClerkProvider>
+      <ClerkProvider
+        appearance={{
+          elements: {
+            formButtonPrimary: 'bg-black hover:bg-gray-800',
+            card: 'shadow-xl border border-gray-200',
+          }
+        }}
+      >
         <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <UserSyncer />
         <Navbar />
         {children}
         </body>

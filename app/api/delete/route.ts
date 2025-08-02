@@ -1,5 +1,7 @@
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { deleteUserFile, getUserByClerkId, getUserStorageInfo } from '@/lib/supabase-storage';
 
 const client = new S3Client({
     region: process.env.AWS_REGION as string,
@@ -11,6 +13,20 @@ const client = new S3Client({
 
 export async function DELETE(request: NextRequest) {
     try {
+        // Get authenticated user
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Get user's storage info
+        const storageInfo = await getUserStorageInfo(userId);
+
+        if (!storageInfo) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
         const { searchParams } = new URL(request.url);
         const key = searchParams.get('key');
         const type = searchParams.get('type');
@@ -20,17 +36,20 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'No key provided' }, { status: 400 });
         }
 
+        // Add user prefix to the key
+        const userKey = `${storageInfo.prefix}/${key}`;
+
         if (type === 'folder') {
             // For folders, we need to delete all objects with this prefix
             const listCommand = new ListObjectsV2Command({
                 Bucket: bucketName,
-                Prefix: key,
+                Prefix: userKey,
             });
 
             const listResult = await client.send(listCommand);
 
             if (listResult.Contents && listResult.Contents.length > 0) {
-                // Delete all objects in the folder
+                // Delete all objects in the folder from S3
                 const deleteCommand = new DeleteObjectsCommand({
                     Bucket: bucketName,
                     Delete: {
@@ -40,15 +59,25 @@ export async function DELETE(request: NextRequest) {
                 });
 
                 await client.send(deleteCommand);
+
+                // Delete from database using clerkId
+                for (const obj of listResult.Contents) {
+                    if (obj.Key) {
+                        await deleteUserFile(userId, obj.Key);
+                    }
+                }
             }
         } else {
             // For single files
             const deleteCommand = new DeleteObjectCommand({
                 Bucket: bucketName,
-                Key: key,
+                Key: userKey,
             });
 
             await client.send(deleteCommand);
+
+            // Delete from database using clerkId
+            await deleteUserFile(userId, userKey);
         }
 
         return NextResponse.json({

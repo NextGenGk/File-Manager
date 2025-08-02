@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Upload, Folder, File, Trash2, Download, Plus, Search, ChevronRight, Home as HomeIcon, RefreshCw, Clock, HardDrive } from 'lucide-react'
+import { Upload, Folder, File, Trash2, Download, Plus, Search, ChevronRight, Home as HomeIcon, RefreshCw, Clock, HardDrive, User } from 'lucide-react'
+import { useUser } from '@clerk/nextjs'
+import AuthDebugger from '@/components/auth-debugger'
 
 interface FileItem {
   Key: string
@@ -11,24 +13,51 @@ interface FileItem {
   LastModified?: string
 }
 
+interface StorageInfo {
+  used: number
+  quota: number
+  available: number
+}
+
 export default function FileManager() {
+  const { user, isSignedIn, isLoaded } = useUser()
   const [files, setFiles] = useState<FileItem[]>([])
   const [currentPath, setCurrentPath] = useState('')
   const [isDragOver, setIsDragOver] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null)
 
   // Fetch files from S3
   const fetchFiles = async (prefix: string = '') => {
+    if (!isSignedIn) {
+      console.log('User not signed in, skipping file fetch');
+      return;
+    }
+
     setLoading(true)
     try {
+      console.log('Fetching files with prefix:', prefix, 'Auth state:', isSignedIn);
       const response = await fetch(`/api/objects?prefix=${encodeURIComponent(prefix)}&bucket=general-s3-ui`)
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching files:', errorData);
+        return;
+      }
+
       const data = await response.json()
 
       if (data.status === 'success') {
         setFiles(data.items)
         setCurrentPath(prefix)
+        if (data.storageInfo) {
+          setStorageInfo(data.storageInfo)
+        }
+      } else if (response.status === 401) {
+        // User not authenticated
+        setFiles([])
       }
     } catch (error) {
       console.error('Error fetching files:', error)
@@ -40,8 +69,10 @@ export default function FileManager() {
 
   // Load files on component mount
   useEffect(() => {
-    fetchFiles('')
-  }, [])
+    if (isSignedIn) {
+      fetchFiles('')
+    }
+  }, [isSignedIn])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -182,6 +213,11 @@ export default function FileManager() {
     return breadcrumbs
   }
 
+  // Filter files based on search term
+  const filteredFiles = files.filter(file =>
+    file.Name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return '0 B'
     const k = 1024
@@ -201,28 +237,124 @@ export default function FileManager() {
     })
   }
 
-  const filteredFiles = files.filter(file =>
-    file.Name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const formatStorageSize = (bytes: number) => {
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+  }
+
+  const getStoragePercentage = () => {
+    if (!storageInfo) return 0
+    return (storageInfo.used / storageInfo.quota) * 100
+  }
+
+  // Show loading state while Clerk is initializing
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-black mx-auto mb-6"></div>
+          <p className="text-gray-600 text-lg">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show sign-in message if not authenticated
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 flex items-center justify-center">
+        <div className="text-center max-w-2xl">
+          <div className="w-20 h-20 bg-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <User className="w-10 h-10 text-gray-500" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Welcome to S3 Manager</h3>
+          <p className="text-gray-600 text-lg mb-6">Please sign in to access your personal cloud storage</p>
+
+          {/* Auth Debugger added for troubleshooting */}
+          <div className="mt-8">
+            <details>
+              <summary className="cursor-pointer text-blue-600 hover:text-blue-800">Troubleshoot Authentication</summary>
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  If you're having trouble signing in, use this tool to diagnose authentication issues.
+                </p>
+                <div className="mt-4">
+                  <AuthDebugger />
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <div className="space-x-4 mt-6">
+            <a
+              href="/sign-in"
+              className="inline-flex items-center px-6 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors"
+            >
+              Sign In
+            </a>
+            <a
+              href="/sign-up"
+              className="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Sign Up
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('Frontend - User status:', {
+    isSignedIn,
+    isLoaded,
+    userId: user?.id,
+    email: user?.emailAddresses?.[0]?.emailAddress
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* Header */}
+        {/* Header with Storage Info */}
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">File Manager</h1>
-              <p className="text-lg text-gray-600 font-medium">Organize and manage your cloud storage files</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-3 tracking-tight">
+                Welcome, {user?.firstName || 'User'}
+              </h1>
+              <p className="text-lg text-gray-600 font-medium">Manage your personal cloud storage</p>
             </div>
-            <button
-              onClick={() => fetchFiles(currentPath)}
-              disabled={loading}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-white/70 backdrop-blur-sm border border-gray-200/80 rounded-xl hover:bg-white hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 group"
-            >
-              <RefreshCw className={`w-4 h-4 text-gray-600 group-hover:text-gray-800 ${loading ? 'animate-spin' : ''}`} />
-              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Refresh</span>
-            </button>
+            <div className="flex items-center space-x-4">
+              {/* Storage Usage Card */}
+              {storageInfo && (
+                <div className="bg-white/70 backdrop-blur-sm border border-gray-200/80 rounded-xl px-6 py-4 shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <HardDrive className="w-5 h-5 text-gray-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {formatStorageSize(storageInfo.used)} / {formatStorageSize(storageInfo.quota)}
+                      </p>
+                      <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                        <div
+                          className="bg-black h-2 rounded-full transition-all duration-200"
+                          style={{ width: `${Math.min(getStoragePercentage(), 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => fetchFiles(currentPath)}
+                disabled={loading}
+                className="flex items-center space-x-2 px-5 py-2.5 bg-white/70 backdrop-blur-sm border border-gray-200/80 rounded-xl hover:bg-white hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 group"
+              >
+                <RefreshCw className={`w-4 h-4 text-gray-600 group-hover:text-gray-800 ${loading ? 'animate-spin' : ''}`} />
+                <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Refresh</span>
+              </button>
+            </div>
           </div>
 
           {/* Breadcrumb Navigation */}

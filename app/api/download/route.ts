@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { auth } from '@clerk/nextjs/server';
+import { getUserStorageInfo } from '@/lib/supabase-storage';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { NextRequest, NextResponse } from 'next/server';
 
 const client = new S3Client({
     region: process.env.AWS_REGION as string,
@@ -12,28 +14,45 @@ const client = new S3Client({
 
 export async function GET(request: NextRequest) {
     try {
+        // Get authenticated user
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Get user's storage info
+        const storageInfo = await getUserStorageInfo(userId);
+        
+        if (!storageInfo) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
         const { searchParams } = new URL(request.url);
         const key = searchParams.get('key');
         const bucketName = searchParams.get('bucket') || 'general-s3-ui';
-        const method = searchParams.get('method') || 'presigned'; // 'presigned' or 'direct'
+        const method = searchParams.get('method') || 'presigned';
 
         if (!key) {
             return NextResponse.json({ error: 'No key provided' }, { status: 400 });
         }
 
+        // Add user prefix to ensure they can only download their files
+        const userKey = `${storageInfo.prefix}/${key}`;
+
         if (method === 'presigned') {
             // Generate a presigned URL for download
             const command = new GetObjectCommand({
                 Bucket: bucketName,
-                Key: key,
+                Key: userKey,
             });
 
-            const signedUrl = await getSignedUrl(client, command, {
+            const signedUrl = await getSignedUrl(client, command, { 
                 expiresIn: 3600 // URL expires in 1 hour
             });
 
-            return NextResponse.json({
-                success: true,
+            return NextResponse.json({ 
+                success: true, 
                 downloadUrl: signedUrl,
                 fileName: key.split('/').pop() || key
             });
@@ -41,11 +60,11 @@ export async function GET(request: NextRequest) {
             // Direct download through our API (for smaller files)
             const command = new GetObjectCommand({
                 Bucket: bucketName,
-                Key: key,
+                Key: userKey,
             });
 
             const result = await client.send(command);
-
+            
             if (!result.Body) {
                 return NextResponse.json({ error: 'File not found' }, { status: 404 });
             }
@@ -53,7 +72,7 @@ export async function GET(request: NextRequest) {
             // Convert stream to buffer
             const chunks = [];
             const reader = result.Body.transformToWebStream().getReader();
-
+            
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -74,8 +93,8 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('Download error:', error);
-        return NextResponse.json({
-            error: 'Download failed',
+        return NextResponse.json({ 
+            error: 'Download failed', 
             details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
