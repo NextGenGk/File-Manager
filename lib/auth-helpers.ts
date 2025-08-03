@@ -1,5 +1,5 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { createOrUpdateUser } from '@/lib/user-storage';
+import { createOrUpdateUser } from '@/lib/supabase-storage';
 import { NextResponse } from 'next/server';
 
 /**
@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 export async function validateAuth() {
   // Get authentication information
   const { userId } = auth();
-  
+
   if (!userId) {
     throw new NextResponse(
       JSON.stringify({
@@ -19,7 +19,7 @@ export async function validateAuth() {
       { status: 401 }
     );
   }
-  
+
   // Get user details and ensure they exist in our database
   const user = await currentUser();
   if (!user) {
@@ -31,7 +31,7 @@ export async function validateAuth() {
       { status: 401 }
     );
   }
-  
+
   // Create or update user in our database
   try {
     await createOrUpdateUser(user);
@@ -45,6 +45,6 @@ export async function validateAuth() {
       { status: 500 }
     );
   }
-  
+
   return userId;
 }

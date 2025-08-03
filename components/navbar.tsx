@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs'
 import { FolderOpen, User, Cloud } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -54,9 +55,11 @@ export default function Navbar() {
                       transition={{ duration: 0.2 }}
                     >
                       {user?.imageUrl ? (
-                        <img
+                        <Image
                           src={user.imageUrl}
                           alt={user.firstName || 'User'}
+                          width={28}
+                          height={28}
                           className="w-7 h-7 rounded-lg object-cover"
                         />
                       ) : (
