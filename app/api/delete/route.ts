@@ -1,7 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
-import { deleteUserFile, getUserByClerkId, getUserStorageInfo } from '@/lib/supabase-storage';
+import { deleteUserFile, getUserStorageInfo } from '@/lib/supabase-storage';
 
 const client = new S3Client({
     region: process.env.S3_REGION as string,
