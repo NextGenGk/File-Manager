@@ -41,3 +41,19 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# IDE files and folders
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
