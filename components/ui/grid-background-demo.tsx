@@ -1,8 +1,17 @@
 import { cn } from "@/lib/utils";
 import React from "react";
-import { SignInButton } from "@clerk/nextjs";
+import { SignInButton, useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function GridBackgroundDemo() {
+  const { isSignedIn } = useUser();
+  const router = useRouter();
+
+  const handleDashboardClick = () => {
+    // Refresh the page to show the dashboard view
+    window.location.reload();
+  };
+
   return (
     <div className="relative flex h-screen w-full items-center justify-center bg-black pt-20">
       <div
@@ -23,11 +32,20 @@ export default function GridBackgroundDemo() {
           A high-performance, developer-first cloud storage platform<br />
           built for speed, scalability, and total control.
         </p>
-        <SignInButton>
-          <button className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all duration-200 text-sm border border-white/20 backdrop-blur-sm">
-            Get Started
+        {isSignedIn ? (
+          <button
+            onClick={handleDashboardClick}
+            className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all duration-200 text-sm border border-white/20 backdrop-blur-sm"
+          >
+            Dashboard
           </button>
-        </SignInButton>
+        ) : (
+          <SignInButton>
+            <button className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all duration-200 text-sm border border-white/20 backdrop-blur-sm">
+              Get Started
+            </button>
+          </SignInButton>
+        )}
       </div>
     </div>
   );

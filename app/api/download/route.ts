@@ -5,12 +5,14 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NextRequest, NextResponse } from 'next/server';
 
 const client = new S3Client({
-    region: process.env.S3_REGION as string,
+    region: process.env.AWS_REGION || process.env.S3_REGION as string,
     credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY as string
     }
 });
+
+const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'general-s3-ui';
 
 export async function GET(request: NextRequest) {
     try {
@@ -30,8 +32,15 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const key = searchParams.get('key');
-        const bucketName = searchParams.get('bucket') || 'general-s3-ui';
+        const bucketName = DEFAULT_BUCKET;
         const method = searchParams.get('method') || 'presigned';
+
+        if (!bucketName) {
+            return NextResponse.json({
+                error: 'Server configuration error',
+                details: 'S3 bucket not configured properly'
+            }, { status: 500 });
+        }
 
         if (!key) {
             return NextResponse.json({ error: 'No key provided' }, { status: 400 });
@@ -51,48 +60,37 @@ export async function GET(request: NextRequest) {
                 expiresIn: 3600 // URL expires in 1 hour
             });
 
-            return NextResponse.json({ 
-                success: true, 
-                downloadUrl: signedUrl,
-                fileName: key.split('/').pop() || key
-            });
+            return NextResponse.json({ url: signedUrl });
         } else {
-            // Direct download through our API (for smaller files)
+            // Direct download
             const command = new GetObjectCommand({
                 Bucket: bucketName,
                 Key: userKey,
             });
 
-            const result = await client.send(command);
-            
-            if (!result.Body) {
+            const response = await client.send(command);
+
+            if (!response.Body) {
                 return NextResponse.json({ error: 'File not found' }, { status: 404 });
             }
 
             // Convert stream to buffer
-            const chunks = [];
-            const reader = result.Body.transformToWebStream().getReader();
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                chunks.push(value);
+            const chunks: Uint8Array[] = [];
+            // @ts-ignore
+            for await (const chunk of response.Body) {
+                chunks.push(chunk);
             }
-
             const buffer = Buffer.concat(chunks);
-            const fileName = key.split('/').pop() || key;
 
             return new NextResponse(buffer, {
                 headers: {
-                    'Content-Type': result.ContentType || 'application/octet-stream',
-                    'Content-Disposition': `attachment; filename="${fileName}"`,
-                    'Content-Length': result.ContentLength?.toString() || buffer.length.toString(),
+                    'Content-Type': response.ContentType || 'application/octet-stream',
+                    'Content-Length': response.ContentLength?.toString() || '',
+                    'Content-Disposition': `attachment; filename="${key}"`,
                 },
             });
         }
-
     } catch (error) {
-        console.error('Download error:', error);
         return NextResponse.json({
             error: 'Download failed',
             details: error instanceof Error ? error.message : 'Unknown error'

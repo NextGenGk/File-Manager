@@ -1,15 +1,17 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { deleteUserFile, getUserStorageInfo } from '@/lib/supabase-storage';
 
 const client = new S3Client({
-    region: process.env.S3_REGION as string,
+    region: process.env.AWS_REGION || process.env.S3_REGION as string,
     credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
-        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY as string
     }
 });
+
+const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'general-s3-ui';
 
 export async function DELETE(request: NextRequest) {
     try {
@@ -27,66 +29,41 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        const { searchParams } = new URL(request.url);
-        const key = searchParams.get('key');
-        const type = searchParams.get('type');
-        const bucketName = searchParams.get('bucket') || 'general-s3-ui';
+        const { key } = await request.json();
+        const bucketName = DEFAULT_BUCKET;
+
+        if (!bucketName) {
+            return NextResponse.json({
+                error: 'Server configuration error',
+                details: 'S3 bucket not configured properly'
+            }, { status: 500 });
+        }
 
         if (!key) {
             return NextResponse.json({ error: 'No key provided' }, { status: 400 });
         }
 
-        // Add user prefix to the key
+        // Create the full S3 key with user prefix
         const userKey = `${storageInfo.prefix}/${key}`;
 
-        if (type === 'folder') {
-            // For folders, we need to delete all objects with this prefix
-            const listCommand = new ListObjectsV2Command({
-                Bucket: bucketName,
-                Prefix: userKey,
-            });
+        // Delete from S3
+        const deleteCommand = new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: userKey,
+        });
 
-            const listResult = await client.send(listCommand);
+        await client.send(deleteCommand);
 
-            if (listResult.Contents && listResult.Contents.length > 0) {
-                // Delete all objects in the folder from S3
-                const deleteCommand = new DeleteObjectsCommand({
-                    Bucket: bucketName,
-                    Delete: {
-                        Objects: listResult.Contents.map(obj => ({ Key: obj.Key! })),
-                        Quiet: false
-                    }
-                });
-
-                await client.send(deleteCommand);
-
-                // Delete from database using clerkId
-                for (const obj of listResult.Contents) {
-                    if (obj.Key) {
-                        await deleteUserFile(userId, obj.Key);
-                    }
-                }
-            }
-        } else {
-            // For single files
-            const deleteCommand = new DeleteObjectCommand({
-                Bucket: bucketName,
-                Key: userKey,
-            });
-
-            await client.send(deleteCommand);
-
-            // Delete from database using clerkId
-            await deleteUserFile(userId, userKey);
-        }
+        // Delete from database
+        await deleteUserFile(userId, userKey);
 
         return NextResponse.json({
             success: true,
-            message: `${type === 'folder' ? 'Folder' : 'File'} deleted successfully`
+            message: 'File deleted successfully',
+            key: key
         });
 
     } catch (error) {
-        console.error('Delete error:', error);
         return NextResponse.json({
             error: 'Delete failed',
             details: error instanceof Error ? error.message : 'Unknown error'

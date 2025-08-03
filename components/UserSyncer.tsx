@@ -1,40 +1,44 @@
 'use client';
 import { useUser } from '@clerk/nextjs';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createOrUpdateUser } from '@/lib/supabase-storage';
 
 export default function UserSyncer() {
     const { user, isLoaded } = useUser();
     const [synced, setSynced] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoaded || !user || synced) return;
 
-        (async () => {
-            const email = user.emailAddresses[0]?.emailAddress || '';
-            const bucketPrefix = `user-${user.id}`;
-            
-            const { error } = await supabase
-                .from('users')
-                .upsert({
-                    clerk_id: user.id,
-                    email,
-                    first_name: user.firstName || '',
-                    last_name: user.lastName || '',
-                    image_url: user.imageUrl || '',
-                    bucket_prefix: bucketPrefix,
-                    storage_quota: 5 * 1024 * 1024 * 1024, // 5GB
-                    storage_used: 0,
-                });
-            
-            if (!error) {
+        const syncUser = async () => {
+            try {
+                setError(null);
+                await createOrUpdateUser(user);
                 setSynced(true);
-                console.log('User synced to Supabase successfully');
-            } else {
-                console.error('Supabase sync error:', error);
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : 'Unknown sync error';
+                setError(errorMessage);
+
+                // Retry after 5 seconds on error
+                setTimeout(() => {
+                    setSynced(false);
+                    setError(null);
+                }, 5000);
             }
-        })();
+        };
+
+        syncUser();
     }, [isLoaded, user, synced]);
+
+    // Show error notification only in development
+    if (process.env.NODE_ENV === 'development' && error) {
+        return (
+            <div className="fixed bottom-4 right-4 bg-red-500/90 text-white p-3 rounded-lg text-sm max-w-xs z-50">
+                <strong>Sync Error:</strong> {error}
+            </div>
+        );
+    }
 
     return null;
 }

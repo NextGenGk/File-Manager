@@ -8,7 +8,7 @@ CREATE TABLE users (
     image_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    storage_quota BIGINT DEFAULT 5368709120, -- 5GB in bytes
+    storage_quota BIGINT DEFAULT 2147483648, -- 2GB in bytes
     storage_used BIGINT DEFAULT 0,
     bucket_prefix TEXT UNIQUE NOT NULL
 );
@@ -38,12 +38,33 @@ CREATE TABLE user_files (
     UNIQUE(user_id, s3_key)
 );
 
+-- Create API keys table
+CREATE TABLE api_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    key_name TEXT NOT NULL,
+    api_key TEXT UNIQUE NOT NULL,
+    api_key_hash TEXT NOT NULL, -- Store hashed version for security
+    permissions TEXT[] DEFAULT ARRAY['read'], -- 'read', 'write', 'delete'
+    is_active BOOLEAN DEFAULT true,
+    last_used TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, key_name)
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_clerk_id ON users(clerk_id);
 CREATE INDEX idx_user_files_user_id ON user_files(user_id);
 CREATE INDEX idx_user_files_s3_key ON user_files(s3_key);
 CREATE INDEX idx_user_folders_user_id ON user_folders(user_id);
 CREATE INDEX idx_user_folders_parent_id ON user_folders(parent_id);
+
+-- Create indexes for API keys
+CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
+CREATE INDEX idx_api_keys_api_key ON api_keys(api_key);
+CREATE INDEX idx_api_keys_is_active ON api_keys(is_active);
 
 -- Create function to automatically update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -56,6 +77,10 @@ $$ language 'plpgsql';
 
 -- Create trigger for users table
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create trigger for API keys table
+CREATE TRIGGER update_api_keys_updated_at BEFORE UPDATE ON api_keys
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- DISABLE Row Level Security for now (we'll handle security at the application level)

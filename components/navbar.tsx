@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs'
-import { FolderOpen, User, Cloud } from 'lucide-react'
+import { FolderOpen, User, Cloud, Key } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function Navbar() {
@@ -41,6 +41,22 @@ export default function Navbar() {
             </SignedOut>
             <SignedIn>
               <div className="flex items-center space-x-6">
+                {/* Navigation Links */}
+                <motion.div
+                  className="hidden lg:flex items-center space-x-4"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                  <Link
+                    href="/api-keys"
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+                  >
+                    <Key className="w-4 h-4" />
+                    API Keys
+                  </Link>
+                </motion.div>
+
                 {/* User Profile Info */}
                 <motion.div
                   className="hidden md:flex items-center space-x-3"

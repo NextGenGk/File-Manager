@@ -1,61 +1,35 @@
 'use client'
 
-import React from 'react'
+import { motion } from 'framer-motion'
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg'
-  className?: string
+  message?: string
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  size = 'md',
-  className = ''
-}) => {
+export default function LoadingSpinner({ size = 'md', message }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12'
+    sm: 'h-6 w-6',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12'
   }
 
   return (
-    <div className={`${sizeClasses[size]} ${className}`}>
-      <div className="animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-    </div>
-  )
-}
-
-interface LoadingPageProps {
-  message?: string
-}
-
-export const LoadingPage: React.FC<LoadingPageProps> = ({
-  message = 'Loading...'
-}) => (
-  <div className="min-h-screen flex items-center justify-center bg-black">
-    <div className="text-center">
-      <LoadingSpinner size="lg" className="mx-auto mb-4" />
-      <p className="text-white/80 text-lg">{message}</p>
-    </div>
-  </div>
-)
-
-interface LoadingOverlayProps {
-  isVisible: boolean
-  message?: string
-}
-
-export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
-  isVisible,
-  message = 'Processing...'
-}) => {
-  if (!isVisible) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 text-center">
-        <LoadingSpinner size="lg" className="mx-auto mb-4" />
-        <p className="text-white text-lg">{message}</p>
-      </div>
+    <div className="flex flex-col items-center justify-center space-y-4">
+      <motion.div
+        className={`animate-spin rounded-full border-2 border-white/20 border-t-white ${sizeClasses[size]}`}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      />
+      {message && (
+        <motion.p
+          className="text-white/70 text-sm font-medium"
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          {message}
+        </motion.p>
+      )}
     </div>
   )
 }
