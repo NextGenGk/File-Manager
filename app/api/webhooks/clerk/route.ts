@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { createOrUpdateUser } from '@/lib/user-storage'
+import { createOrUpdateUser } from '@/lib/supabase-storage'
 
 export async function POST(req: NextRequest) {
   console.log('Webhook received')
-  
+
   try {
     // Get the headers
     const headerPayload = headers()
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     // Get the body
     const payload = await req.json()
     const body = JSON.stringify(payload)
-    
+
     console.log('Payload type:', payload.type)
 
     // Create a new Svix instance with your secret.
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         'svix-timestamp': svix_timestamp,
         'svix-signature': svix_signature,
       }) as WebhookEvent
-      
+
       console.log('Webhook verified successfully')
     } catch (err) {
       console.error('Error verifying webhook:', err)
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Webhook processed successfully')
     return new NextResponse('OK', { status: 200 })
-    
+
   } catch (error) {
     console.error('Webhook error:', error)
     return new NextResponse('Internal server error', { status: 500 })
