@@ -4,7 +4,7 @@ export interface ApiError {
   message: string
   code?: string
   statusCode: number
-  details?: any
+  details?: Record<string, unknown>
 }
 
 export class ApiErrorHandler {
@@ -60,7 +60,7 @@ export class ApiErrorHandler {
     )
   }
 
-  static createError(message: string, statusCode: number, code?: string, details?: any): ApiError {
+  static createError(message: string, statusCode: number, code?: string, details?: Record<string, unknown>): ApiError {
     return {
       message,
       statusCode,
