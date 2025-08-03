@@ -15,7 +15,7 @@ export default function Navbar() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-2 shadow-2xl shadow-white/5 hover:shadow-white/10 transition-all duration-300">
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-2 shadow-xl">
         <div className="flex justify-between items-center">
           {/* Logo/Brand */}
           <Link href="/" className="flex items-center space-x-4 group">

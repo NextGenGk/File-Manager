@@ -4,10 +4,10 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { getUserStorageInfo, updateUserStorageUsed, createUserFile, createOrUpdateUser } from '@/lib/supabase-storage';
 
 const client = new S3Client({
-    region: process.env.AWS_REGION as string,
+    region: process.env.S3_REGION as string,
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY as string,
-        secretAccessKey: process.env.AWS_SECRET_KEY as string
+        accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string
     }
 });
 

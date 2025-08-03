@@ -5,10 +5,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { NextRequest, NextResponse } from 'next/server';
 
 const client = new S3Client({
-    region: process.env.AWS_REGION as string,
+    region: process.env.S3_REGION as string,
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY as string,
-        secretAccessKey: process.env.AWS_SECRET_KEY as string
+        accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string
     }
 });
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     try {
         // Get authenticated user
         const { userId } = await auth();
-        
+
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -93,8 +93,8 @@ export async function GET(request: NextRequest) {
 
     } catch (error) {
         console.error('Download error:', error);
-        return NextResponse.json({ 
-            error: 'Download failed', 
+        return NextResponse.json({
+            error: 'Download failed',
             details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
