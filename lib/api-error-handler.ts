@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
 
-export interface ApiError {
-  message: string
-  code?: string
-  statusCode: number
-  details?: Record<string, unknown>
+export class ApiError extends Error {
+  public code?: string
+  public statusCode: number
+  public details?: Record<string, unknown>
+
+  constructor(message: string, statusCode: number, code?: string, details?: Record<string, unknown>) {
+    super(message)
+    this.name = 'ApiError'
+    this.statusCode = statusCode
+    this.code = code
+    this.details = details
+  }
 }
 
 export class ApiErrorHandler {
@@ -61,12 +68,7 @@ export class ApiErrorHandler {
   }
 
   static createError(message: string, statusCode: number, code?: string, details?: Record<string, unknown>): ApiError {
-    return {
-      message,
-      statusCode,
-      code,
-      details,
-    }
+    return new ApiError(message, statusCode, code, details)
   }
 }
 
