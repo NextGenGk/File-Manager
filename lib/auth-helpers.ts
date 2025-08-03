@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
  */
 export async function validateAuth() {
   // Get authentication information
-  const { userId } = auth();
+  const { userId } = await auth();
 
   if (!userId) {
     throw new NextResponse(
