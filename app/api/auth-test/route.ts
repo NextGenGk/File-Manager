@@ -1,3 +1,7 @@
+// PRODUCTION: Commented out debugging API endpoint for production build
+// This endpoint was used for development/troubleshooting authentication issues
+
+/*
 import { NextRequest, NextResponse } from 'next/server'
 import { auth, currentUser } from '@clerk/nextjs/server'
 
@@ -29,4 +33,14 @@ export async function GET(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
+}
+*/
+
+// Production: Auth test endpoint disabled for production
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({
+    message: 'Auth test endpoint disabled in production'
+  }, { status: 404 })
 }

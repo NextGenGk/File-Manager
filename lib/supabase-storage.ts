@@ -1,3 +1,111 @@
+    .single()
+
+  if (fetchError || !user) {
+    throw new Error('Failed to fetch user storage info')
+  }
+
+  const newStorageUsed = user.storage_used + sizeChange
+
+  const { data, error } = await supabase
+    .from('users')
+    .update({ storage_used: newStorageUsed })
+    .eq('clerk_id', clerkId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function createUserFile(data: {
+  clerkId: string
+  s3Key: string
+  fileName: string
+  fileSize: number
+  contentType?: string
+  folderId?: string
+}) {
+  // Get user ID from clerk ID
+  const user = await getUserByClerkId(data.clerkId)
+  if (!user) throw new Error('User not found')
+
+  const { data: file, error } = await supabase
+    .from('user_files')
+    .insert({
+      user_id: user.id,
+      s3_key: data.s3Key,
+      file_name: data.fileName,
+      file_size: data.fileSize,
+      content_type: data.contentType,
+      folder_id: data.folderId,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return file
+}
+
+export async function deleteUserFile(clerkId: string, s3Key: string) {
+  // Get user ID from clerk ID
+  const user = await getUserByClerkId(clerkId)
+  if (!user) throw new Error('User not found')
+
+  const { data, error } = await supabase
+    .from('user_files')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('s3_key', s3Key)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserFiles(clerkId: string, folderId?: string) {
+  // Get user ID from clerk ID
+  const user = await getUserByClerkId(clerkId)
+  if (!user) throw new Error('User not found')
+
+  let query = supabase
+    .from('user_files')
+    .select('*')
+    .eq('user_id', user.id)
+
+  if (folderId) {
+    query = query.eq('folder_id', folderId)
+  } else {
+    query = query.is('folder_id', null)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  return data || []
+}
+
+export async function getUserFolders(clerkId: string, parentId?: string) {
+  // Get user ID from clerk ID
+  const user = await getUserByClerkId(clerkId)
+  if (!user) throw new Error('User not found')
+
+  let query = supabase
+    .from('user_folders')
+    .select('*')
+    .eq('user_id', user.id)
+
+  if (parentId) {
+    query = query.eq('parent_id', parentId)
+  } else {
+    query = query.is('parent_id', null)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+  return data || []
+}
 import { supabase, type Tables } from './supabase'
 import { User } from '@clerk/nextjs/server'
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
@@ -156,111 +264,3 @@ export async function updateUserStorageUsed(clerkId: string, sizeChange: number)
     .from('users')
     .select('storage_used')
     .eq('clerk_id', clerkId)
-    .single()
-
-  if (fetchError || !user) {
-    throw new Error('Failed to fetch user storage info')
-  }
-
-  const newStorageUsed = user.storage_used + sizeChange
-
-  const { data, error } = await supabase
-    .from('users')
-    .update({ storage_used: newStorageUsed })
-    .eq('clerk_id', clerkId)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function createUserFile(data: {
-  clerkId: string
-  s3Key: string
-  fileName: string
-  fileSize: number
-  contentType?: string
-  folderId?: string
-}) {
-  // Get user ID from clerk ID
-  const user = await getUserByClerkId(data.clerkId)
-  if (!user) throw new Error('User not found')
-
-  const { data: file, error } = await supabase
-    .from('user_files')
-    .insert({
-      user_id: user.id,
-      s3_key: data.s3Key,
-      file_name: data.fileName,
-      file_size: data.fileSize,
-      content_type: data.contentType,
-      folder_id: data.folderId,
-    })
-    .select()
-    .single()
-
-  if (error) throw error
-  return file
-}
-
-export async function deleteUserFile(clerkId: string, s3Key: string) {
-  // Get user ID from clerk ID
-  const user = await getUserByClerkId(clerkId)
-  if (!user) throw new Error('User not found')
-
-  const { data, error } = await supabase
-    .from('user_files')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('s3_key', s3Key)
-    .select()
-    .single()
-
-  if (error) throw error
-  return data
-}
-
-export async function getUserFiles(clerkId: string, folderId?: string) {
-  // Get user ID from clerk ID
-  const user = await getUserByClerkId(clerkId)
-  if (!user) throw new Error('User not found')
-
-  let query = supabase
-    .from('user_files')
-    .select('*')
-    .eq('user_id', user.id)
-
-  if (folderId) {
-    query = query.eq('folder_id', folderId)
-  } else {
-    query = query.is('folder_id', null)
-  }
-
-  const { data, error } = await query
-
-  if (error) throw error
-  return data || []
-}
-
-export async function getUserFolders(clerkId: string, parentId?: string) {
-  // Get user ID from clerk ID
-  const user = await getUserByClerkId(clerkId)
-  if (!user) throw new Error('User not found')
-
-  let query = supabase
-    .from('user_folders')
-    .select('*')
-    .eq('user_id', user.id)
-
-  if (parentId) {
-    query = query.eq('parent_id', parentId)
-  } else {
-    query = query.is('parent_id', null)
-  }
-
-  const { data, error } = await query
-
-  if (error) throw error
-  return data || []
-}

@@ -117,6 +117,47 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Geist Grid Background Patterns */
+  .bg-grid-black\/\[0\.2\] {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0, 0, 0, 0.2) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .bg-grid-white\/\[0\.2\] {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Geist Dot Background Patterns */
+  .bg-dot-black\/\[0\.2\] {
+    background-image: radial-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px);
+    background-size: 15px 15px;
+  }
+
+  .bg-dot-white\/\[0\.2\] {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px);
+    background-size: 15px 15px;
+  }
+
+  /* Smooth animations for Geist components */
+  .geist-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Geist-style glass morphism */
+  .geist-glass {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.125);
+  }
+
+  .dark .geist-glass {
+    background-color: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.125);
   }
 }

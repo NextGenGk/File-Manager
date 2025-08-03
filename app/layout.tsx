@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'File Manager - Drag & Drop',
+  title: 'XyStorage - Data Reimagined',
   description: 'Simple drag and drop file manager',
 }
 
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-      <ClerkProvider
+      <ClerkProvider 
         appearance={{
           elements: {
             formButtonPrimary: 'bg-black hover:bg-gray-800',

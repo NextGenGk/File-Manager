@@ -2,93 +2,98 @@
 
 import Link from 'next/link'
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs'
-import { FolderOpen, User } from 'lucide-react'
+import { FolderOpen, User, Cloud } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function Navbar() {
   const { user } = useUser()
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <motion.nav
+      className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-7xl px-4"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-2 shadow-xl">
+        <div className="flex justify-between items-center">
           {/* Logo/Brand */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="w-9 h-9 bg-black rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+          <Link href="/" className="flex items-center space-x-4 group">
+            <motion.div
+              className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl geist-transition border border-white/30"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <FolderOpen className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-gray-900 leading-none">S3 Manager</span>
-              <span className="text-xs text-gray-500 leading-none">Cloud Storage</span>
-            </div>
+            </motion.div>
+            <span className="text-xl font-bold text-white leading-none font-geist-sans">XyStorage</span>
           </Link>
 
           {/* Auth Section */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <SignedOut>
               <SignInButton>
-                <button className="bg-black text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-all duration-200 shadow-sm hover:shadow-md">
+                <button className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all duration-200 text-sm border border-white/20 backdrop-blur-sm !bg-white/10 hover:!bg-white/20">
                   Sign In
                 </button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-6">
                 {/* User Profile Info */}
-                <div className="hidden md:flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-xl px-4 py-2 border border-gray-200/80">
-                  <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-                    {user?.imageUrl ? (
-                      <img
-                        src={user.imageUrl}
-                        alt={user.firstName || 'User'}
-                        className="w-8 h-8 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <User className="w-4 h-4 text-white" />
-                    )}
+                <motion.div
+                  className="hidden md:flex items-center space-x-3"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
+                  <div className="flex items-center space-x-3 px-4 py-1 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <motion.div
+                      className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center overflow-hidden border border-white/30"
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {user?.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt={user.firstName || 'User'}
+                          className="w-7 h-7 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-white" />
+                      )}
+                    </motion.div>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-white font-geist-sans">
+                        {user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
+                      </span>
+                      <div className="flex items-center space-x-1">
+                        <Cloud className="w-3 h-3 text-white/60" />
+                        <span className="text-xs text-white/60">Active</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-900 leading-none">
-                      {user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 leading-none mt-0.5">
-                      {user?.emailAddresses[0]?.emailAddress || 'Welcome back'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Mobile Profile - Just Avatar */}
-                <div className="md:hidden flex items-center space-x-2 bg-white/60 backdrop-blur-sm rounded-xl px-3 py-2 border border-gray-200/80">
-                  <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
-                    {user?.imageUrl ? (
-                      <img
-                        src={user.imageUrl}
-                        alt={user.firstName || 'User'}
-                        className="w-7 h-7 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <User className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">
-                    {user?.firstName || 'User'}
-                  </span>
-                </div>
+                </motion.div>
 
                 {/* User Button */}
-                <UserButton
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-9 h-9 rounded-xl border-2 border-gray-200 shadow-sm",
-                      userButtonPopover: "rounded-xl shadow-lg border-gray-200"
-                    }
-                  }}
-                />
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8 ring-2 ring-white/30 hover:ring-white/50 geist-transition",
+                        userButtonPopoverCard: "backdrop-blur-md bg-white/90 shadow-xl border border-white/20"
+                      }
+                    }}
+                  />
+                </motion.div>
               </div>
             </SignedIn>
           </div>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   )
 }

@@ -13,7 +13,7 @@ export default function UserSyncer() {
         (async () => {
             const email = user.emailAddresses[0]?.emailAddress || '';
             const bucketPrefix = `user-${user.id}`;
-
+            
             const { error } = await supabase
                 .from('users')
                 .upsert({
@@ -26,7 +26,7 @@ export default function UserSyncer() {
                     storage_quota: 5 * 1024 * 1024 * 1024, // 5GB
                     storage_used: 0,
                 });
-
+            
             if (!error) {
                 setSynced(true);
                 console.log('User synced to Supabase successfully');

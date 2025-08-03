@@ -1,3 +1,7 @@
+// PRODUCTION: Commented out debugging component for production build
+// This component was used for development/troubleshooting authentication issues
+
+/*
 'use client'
 
 import { useUser } from '@clerk/nextjs'
@@ -21,4 +25,11 @@ export default function AuthDebugger() {
       </div>
     </div>
   )
+}
+*/
+
+// Production-ready placeholder - component disabled for production
+export default function AuthDebugger() {
+  // Debugging component disabled in production
+  return null
 }
