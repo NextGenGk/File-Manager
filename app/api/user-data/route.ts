@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getUserOverview(user: any, userId: string) {
+async function getUserOverview(user: Record<string, unknown>, userId: string) {
   const storageInfo = await getUserStorageInfo(userId)
 
   if (!storageInfo) {
@@ -122,7 +122,7 @@ async function getUserOverview(user: any, userId: string) {
   })
 }
 
-async function getUserFiles(user: any, userId: string, prefix: string, limit: number, includeContent: boolean) {
+async function getUserFiles(user: Record<string, unknown>, userId: string, prefix: string, limit: number, includeContent: boolean) {
   const storageInfo = await getUserStorageInfo(userId)
 
   if (!storageInfo) {
@@ -154,7 +154,7 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
   const files = await Promise.all((s3Result.Contents || []).map(async (s3File) => {
     const dbFile = dbFiles?.find(f => f.s3_key === s3File.Key)
 
-    const fileData: any = {
+    const fileData: Record<string, unknown> = {
       key: s3File.Key?.replace(`${storageInfo?.prefix || ''}/`, ''),
       size: s3File.Size,
       last_modified: s3File.LastModified,
@@ -199,7 +199,7 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
   })
 }
 
-async function getUserFolders(user: any, userId: string) {
+async function getUserFolders(user: Record<string, unknown>, userId: string) {
   const { data: folders, error } = await supabase
     .from('user_folders')
     .select('*')
@@ -228,7 +228,7 @@ async function getUserStorageStats(userId: string) {
     .select('content_type, file_size')
     .eq('user_id', (await getUserByClerkId(userId))?.id)
 
-  const typeBreakdown = fileTypes?.reduce((acc: any, file) => {
+  const typeBreakdown = fileTypes?.reduce((acc: Record<string, { count: number, size: number }>, file) => {
     const type = file.content_type || 'unknown'
     const category = getFileCategory(type)
 

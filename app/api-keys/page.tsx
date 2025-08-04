@@ -91,7 +91,7 @@ export default function ApiKeysPage() {
   }
 
   const deleteApiKey = async (keyId: string, keyName: string) => {
-    if (!confirm(`Are you sure you want to delete "${keyName}"?`)) return
+    if (!confirm(`Are you sure you want to delete \"${keyName}\"?`)) return
 
     try {
       const response = await fetch(`/api/api-keys?keyId=${keyId}&action=delete`, {
@@ -398,7 +398,7 @@ export default function ApiKeysPage() {
                         API Key Created Successfully!
                       </h3>
                       <p className="text-white/70 text-sm leading-relaxed">
-                        Your API key <span className="text-white font-medium">"{newCreatedKey.name}"</span> has been created.
+                        Your API key <span className="text-white font-medium">&quot;{newCreatedKey.name}&quot;</span> has been created.
                       </p>
                     </div>
 
@@ -413,7 +413,7 @@ export default function ApiKeysPage() {
                             Important Security Notice
                           </p>
                           <p className="text-amber-200/90 text-xs leading-relaxed">
-                            This is the only time you'll see the full key. Save it securely - you won't be able to view it again after closing this modal.
+                            This is the only time you&apos;ll see the full key. Save it securely - you won&apos;t be able to view it again after closing this modal.
                           </p>
                         </div>
                       </div>

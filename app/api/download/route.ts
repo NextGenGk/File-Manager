@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
             // Convert stream to buffer
             const chunks: Uint8Array[] = [];
-            // @ts-expect-error
+            // @ts-expect-error - S3 response Body is a ReadableStream which needs async iteration
             for await (const chunk of response.Body) {
                 chunks.push(chunk);
             }

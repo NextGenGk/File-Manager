@@ -99,8 +99,17 @@ export async function validateApiKey(apiKey: string): Promise<{ userId: string; 
     .update({ last_used: new Date().toISOString() })
     .eq('api_key', hashedKey)
 
+  // Extract clerk_id from the users object returned by Supabase
+  // Define proper type for the joined users data from Supabase
+  type UserRecord = {
+    id: string;
+    clerk_id: string;
+  };
+
+  // Cast with proper type information
+  const user = data.users[0] as UserRecord;
   return {
-    userId: (data.users as any).clerk_id,
+    userId: user.clerk_id,
     permissions: data.permissions
   }
 }
