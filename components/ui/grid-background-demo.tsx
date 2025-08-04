@@ -33,7 +33,7 @@ export default function GridBackgroundDemo() {
           built for speed, scalability, and total control.
         </p>
         {isSignedIn ? (
-          <button
+          <button 
             onClick={handleDashboardClick}
             className="inline-flex items-center px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all duration-200 text-sm border border-white/20 backdrop-blur-sm"
           >

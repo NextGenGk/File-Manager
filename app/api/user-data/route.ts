@@ -17,7 +17,7 @@ const s3Client = new S3Client({
 export async function GET(request: NextRequest) {
   try {
     const auth = await validateAuthOrApiKey(request)
-
+    
     if (!hasPermission(auth.permissions, 'read')) {
       return NextResponse.json(
         { error: 'Insufficient permissions', message: 'Read permission required' },
@@ -42,16 +42,16 @@ export async function GET(request: NextRequest) {
     switch (dataType) {
       case 'overview':
         return await getUserOverview(user, auth.userId)
-
+      
       case 'files':
         return await getUserFiles(user, auth.userId, prefix, limit, includeContent)
-
+      
       case 'folders':
         return await getUserFolders(user, auth.userId)
-
+      
       case 'storage':
         return await getUserStorageStats(auth.userId)
-
+      
       default:
         return NextResponse.json(
           { error: 'Invalid data type', message: 'Valid types: overview, files, folders, storage' },
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
 async function getUserOverview(user: any, userId: string) {
   const storageInfo = await getUserStorageInfo(userId)
-
+  
   // Get file count and recent files
   const { data: fileStats } = await supabase
     .from('user_files')
@@ -121,10 +121,10 @@ async function getUserOverview(user: any, userId: string) {
 async function getUserFiles(user: any, userId: string, prefix: string, limit: number, includeContent: boolean) {
   const storageInfo = await getUserStorageInfo(userId)
   const bucketName = process.env.S3_BUCKET_NAME || 'general-s3-ui'
-
+  
   // Build S3 prefix
   const s3Prefix = storageInfo.prefix + (prefix ? `/${prefix}` : '')
-
+  
   // Get files from S3
   const command = new ListObjectsV2Command({
     Bucket: bucketName,
@@ -133,7 +133,7 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
   })
 
   const s3Result = await s3Client.send(command)
-
+  
   // Get file metadata from database
   const { data: dbFiles } = await supabase
     .from('user_files')
@@ -144,7 +144,7 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
 
   const files = await Promise.all((s3Result.Contents || []).map(async (s3File) => {
     const dbFile = dbFiles?.find(f => f.s3_key === s3File.Key)
-
+    
     const fileData: any = {
       key: s3File.Key?.replace(`${storageInfo.prefix}/`, ''),
       size: s3File.Size,
@@ -212,7 +212,7 @@ async function getUserFolders(user: any, userId: string) {
 
 async function getUserStorageStats(userId: string) {
   const storageInfo = await getUserStorageInfo(userId)
-
+  
   // Get file type breakdown
   const { data: fileTypes } = await supabase
     .from('user_files')
@@ -222,13 +222,13 @@ async function getUserStorageStats(userId: string) {
   const typeBreakdown = fileTypes?.reduce((acc: any, file) => {
     const type = file.content_type || 'unknown'
     const category = getFileCategory(type)
-
+    
     if (!acc[category]) {
       acc[category] = { count: 0, size: 0 }
     }
     acc[category].count++
     acc[category].size += file.file_size
-
+    
     return acc
   }, {}) || {}
 

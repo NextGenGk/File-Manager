@@ -22,7 +22,7 @@ export default function Breadcrumb({ items }: BreadcrumbProps) {
       {items.map((item, index) => (
         <div key={index} className="flex items-center space-x-2">
           {index > 0 && <span className="text-white/30">/</span>}
-          <motion.div
+          <motion.div 
             className={`flex items-center space-x-1 transition-colors duration-200 ${
               item.isActive 
                 ? 'text-blue-300' 
