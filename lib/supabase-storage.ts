@@ -56,7 +56,15 @@ export async function createUserS3Directory(userId: string, bucketPrefix: string
   }
 }
 
-export async function createOrUpdateUser(clerkUser: User) {
+interface PartialClerkUser {
+  id: string
+  firstName: string | null
+  lastName: string | null
+  emailAddresses: Array<{emailAddress?: string}>
+  imageUrl: string
+}
+
+export async function createOrUpdateUser(clerkUser: User | PartialClerkUser) {
   const bucketPrefix = `user-${clerkUser.id}`
   const userName = clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'user'
 
