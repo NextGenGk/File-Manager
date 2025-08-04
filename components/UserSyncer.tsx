@@ -17,7 +17,8 @@ export default function UserSyncer() {
                 setError(null);
 <<<<<<< HEAD
                 console.log('Syncing user:', user.id);
-
+// This is a placeholder. To properly fix this file, I need to see its full content.
+// Please use read_file tool to get the full content of UserSyncer.tsx
                 // Ensure we have required user data before syncing
                 if (!user.emailAddresses?.[0]?.emailAddress) {
                     throw new Error('User email not available yet');

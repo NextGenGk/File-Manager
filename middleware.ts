@@ -21,7 +21,6 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, request: NextRequest) => {
 =======
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
   const startTime = Date.now();
 
   try {
@@ -60,7 +59,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     // Apply CORS for API routes
     if (request.nextUrl.pathname.startsWith('/api/')) {
       const origin = request.headers.get('origin');
-<<<<<<< HEAD
 
       // Apply rate limiting to API routes
       const rateLimitCheck = withRateLimit(request);
@@ -79,18 +77,8 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         );
       }
 
-      // Set CORS headers
-      if (origin) {
-        response.headers.set('Access-Control-Allow-Origin', origin);
-      }
-      response.headers.set(
-        'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, OPTIONS'
-      );
-      response.headers.set(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-API-Key'
-      );
+      // Set CORS headers using helper function
+      response = withCORS(response, origin || undefined);
     }
 
     // Log request in production
@@ -105,23 +93,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         },
       });
     }
-=======
-      response = withCORS(response, origin || undefined);
-    }
-
-    // Continue with Clerk middleware for auth
-    return clerkMiddleware(async (auth, req) => {
-      // Public routes don't need authentication
-      if (isPublicRoute(req)) return response;
-
-      // Protect all other routes
-      const authObj = await auth();
-      if (!authObj.userId) {
-        return NextResponse.redirect(new URL('/sign-in', request.url));
-      }
-      return response;
-    })(request, event);
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
 
   } catch (error) {
 <<<<<<< HEAD

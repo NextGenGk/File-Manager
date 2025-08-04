@@ -141,12 +141,8 @@ export function validateConfig(): void {
 
     console.log('✅ Configuration validated successfully')
   } catch (error) {
-<<<<<<< HEAD
-    console.error('❌ Configuration validation failed:', (error as Error).message)
-=======
     const errorMessage = error instanceof Error ? error.message : 'Unknown configuration error'
     console.error('❌ Configuration validation failed:', errorMessage)
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
     if (config.NODE_ENV === 'production') {
       process.exit(1)
     }
