@@ -28,8 +28,8 @@ export async function GET() {
       last_used: key.last_used,
       expires_at: key.expires_at,
       created_at: key.created_at,
-      // Never return the actual API key
-      api_key: `sk_****${key.api_key.slice(-4)}`
+      // Show a meaningful placeholder since we can't recover the original key
+      api_key: `sk_••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••${key.id.slice(-4)}`
     }))
 
     return NextResponse.json({ apiKeys: sanitizedKeys })
@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { keyName, permissions = ['read'], expiresAt } = body
+
+    console.log('Received request body:', { keyName, permissions, expiresAt }) // Debug log
 
     if (!keyName || typeof keyName !== 'string') {
       return NextResponse.json(
@@ -107,9 +109,21 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating API key:', error)
+
+    // If the error is already a NextResponse (from validateAuth), return it directly
     if (error instanceof NextResponse) {
       return error
     }
+
+    // Log the actual error details for debugging
+    if (error instanceof Error) {
+      console.error('Error details:', error.message, error.stack)
+      return NextResponse.json(
+        { error: 'Failed to create API key', details: error.message },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Failed to create API key' },
       { status: 500 }

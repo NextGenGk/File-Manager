@@ -54,8 +54,8 @@ export async function createApiKey({
     .insert({
       user_id: userId,
       key_name: keyName,
-      api_key: plainKey, // Store plain key for returning to user (only time they'll see it)
-      api_key_hash: hashedKey,
+      api_key: hashedKey, // Store hashed key for validation
+      api_key_hash: hashedKey, // Also store in the dedicated hash column
       permissions,
       expires_at: expiresAt?.toISOString()
     })
@@ -63,12 +63,6 @@ export async function createApiKey({
     .single()
 
   if (error) throw error
-
-  // Immediately update to store only the hash
-  await supabase
-    .from('api_keys')
-    .update({ api_key: hashedKey })
-    .eq('id', data.id)
 
   return { apiKey: data, plainKey }
 }

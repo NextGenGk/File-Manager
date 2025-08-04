@@ -2,14 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Production optimizations
+  compress: true,
+  poweredByHeader: false,
   output: 'standalone',
-
-  // Image optimization for better performance
-  images: {
-    domains: ['img.clerk.com', 'images.clerk.dev'],
-    formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60,
-  },
 
   // Security headers
   async headers() {
@@ -19,43 +14,105 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'DENY'
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            value: 'nosniff'
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin'
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-        ],
-      },
-    ];
+            value: 'camera=(), microphone=(), geolocation=()'
+          }
+        ]
+      }
+    ]
   },
 
-  // Compression
-  compress: true,
+  // Image optimization
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
 
-  // Experimental features for better performance
+  // Experimental features for production
   experimental: {
-    optimizePackageImports: ['@clerk/nextjs', '@supabase/supabase-js'],
+    // Enable modern bundling
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
 
-  // Bundle analyzer (uncomment for bundle analysis)
-  // webpack: (config, { isServer }) => {
-  //   if (!isServer) {
-  //     config.resolve.fallback = {
-  //       ...config.resolve.fallback,
-  //       fs: false,
-  //     };
-  //   }
-  //   return config;
-  // },
+  // Environment variables validation
+  env: {
+    CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // Build optimization
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn']
+    } : false,
+  },
+
+  // Webpack configuration
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Production optimizations
+    if (!dev && !isServer) {
+      config.optimization.splitChunks.cacheGroups = {
+        ...config.optimization.splitChunks.cacheGroups,
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      }
+    }
+
+    // Bundle analyzer (optional)
+    if (process.env.ANALYZE === 'true') {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          openAnalyzer: false,
+        })
+      )
+    }
+
+    return config
+  },
+
+  // Redirects for production
+  async redirects() {
+    return [
+      {
+        source: '/admin',
+        destination: '/api-keys',
+        permanent: false,
+      },
+    ]
+  },
+
+  // API routes configuration
+  async rewrites() {
+    return [
+      {
+        source: '/healthz',
+        destination: '/api/health',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
