@@ -15,17 +15,13 @@ export default function UserSyncer() {
         const syncUser = async () => {
             try {
                 setError(null);
-<<<<<<< HEAD
                 console.log('Syncing user:', user.id);
-// This is a placeholder. To properly fix this file, I need to see its full content.
-// Please use read_file tool to get the full content of UserSyncer.tsx
+
                 // Ensure we have required user data before syncing
                 if (!user.emailAddresses?.[0]?.emailAddress) {
                     throw new Error('User email not available yet');
                 }
 
-                await createOrUpdateUser(user as any);
-=======
                 // Convert UserResource to the expected User format
                 const userForSync = {
                     id: user.id,
@@ -35,7 +31,6 @@ export default function UserSyncer() {
                     imageUrl: user.imageUrl,
                 };
                 await createOrUpdateUser(userForSync as any);
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
                 setSynced(true);
                 setRetryCount(0);
                 console.log('User synced successfully');

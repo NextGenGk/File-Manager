@@ -1,8 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher, auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest, NextFetchEvent } from 'next/server';
 import { validateConfig } from '@/lib/config';
-import { withSecurityHeaders, withCORS } from '@/lib/security-middleware';
+import { withSecurityHeaders, withCORS, withRateLimit } from '@/lib/security-middleware';
 import { logger } from '@/lib/error-handling';
 
 // Validate configuration on startup
@@ -17,9 +17,6 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
 ]);
 
-<<<<<<< HEAD
-export default clerkMiddleware(async (auth, request: NextRequest) => {
-=======
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const startTime = Date.now();
 
@@ -95,22 +92,17 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     }
 
   } catch (error) {
-<<<<<<< HEAD
+    const duration = Date.now() - startTime;
+    const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
     logger.error('Middleware error', {
       action: 'middleware_error',
       error: error instanceof Error ? error.message : 'Unknown error',
-=======
-    const duration = Date.now() - startTime;
-    const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
-    logger.error('Middleware error', errorObj, {
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
       metadata: {
         pathname: request.nextUrl.pathname,
         duration
       }
     });
 
-<<<<<<< HEAD
     return new NextResponse(
       JSON.stringify({ error: 'Internal server error' }),
       {
@@ -119,12 +111,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
       }
     );
   }
-});
-=======
-    return NextResponse.next();
-  }
 }
->>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
 
 export const config = {
   matcher: [
