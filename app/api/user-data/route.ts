@@ -73,6 +73,10 @@ export async function GET(request: NextRequest) {
 async function getUserOverview(user: any, userId: string) {
   const storageInfo = await getUserStorageInfo(userId)
 
+  if (!storageInfo) {
+    throw new Error('Storage information not found for user')
+  }
+
   // Get file count and recent files
   const { data: fileStats } = await supabase
     .from('user_files')
@@ -120,6 +124,11 @@ async function getUserOverview(user: any, userId: string) {
 
 async function getUserFiles(user: any, userId: string, prefix: string, limit: number, includeContent: boolean) {
   const storageInfo = await getUserStorageInfo(userId)
+
+  if (!storageInfo) {
+    throw new Error('Storage information not found for user')
+  }
+
   const bucketName = process.env.S3_BUCKET_NAME || 'general-s3-ui'
 
   // Build S3 prefix with null check

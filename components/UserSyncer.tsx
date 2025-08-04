@@ -15,6 +15,7 @@ export default function UserSyncer() {
         const syncUser = async () => {
             try {
                 setError(null);
+<<<<<<< HEAD
                 console.log('Syncing user:', user.id);
 
                 // Ensure we have required user data before syncing
@@ -23,6 +24,17 @@ export default function UserSyncer() {
                 }
 
                 await createOrUpdateUser(user as any);
+=======
+                // Convert UserResource to the expected User format
+                const userForSync = {
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    emailAddresses: user.emailAddresses,
+                    imageUrl: user.imageUrl,
+                };
+                await createOrUpdateUser(userForSync as any);
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
                 setSynced(true);
                 setRetryCount(0);
                 console.log('User synced successfully');

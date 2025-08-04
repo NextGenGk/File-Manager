@@ -35,7 +35,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.645.0",
+<<<<<<< HEAD
     "@aws-sdk/s3-request-presigner": "^3.859.0",
+=======
+    "@aws-sdk/s3-request-presigner": "^3.645.0",
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
     "@clerk/nextjs": "^6.9.0",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
@@ -64,7 +68,11 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+<<<<<<< HEAD
     "autoprefixer": "^10.4.17",
+=======
+    "autoprefixer": "^10.4.20",
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
     "eslint": "^9",
     "eslint-config-next": "^15.1.6",
     "postcss": "^8.4.49",

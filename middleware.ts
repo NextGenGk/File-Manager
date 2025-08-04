@@ -1,8 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextFetchEvent } from 'next/server';
 import { validateConfig } from '@/lib/config';
-import { withSecurityHeaders, withRateLimit } from '@/lib/security-middleware';
+import { withSecurityHeaders, withCORS } from '@/lib/security-middleware';
 import { logger } from '@/lib/error-handling';
 
 // Validate configuration on startup
@@ -17,7 +17,11 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
 ]);
 
+<<<<<<< HEAD
 export default clerkMiddleware(async (auth, request: NextRequest) => {
+=======
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
   const startTime = Date.now();
 
   try {
@@ -56,6 +60,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
     // Apply CORS for API routes
     if (request.nextUrl.pathname.startsWith('/api/')) {
       const origin = request.headers.get('origin');
+<<<<<<< HEAD
 
       // Apply rate limiting to API routes
       const rateLimitCheck = withRateLimit(request);
@@ -100,18 +105,41 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
         },
       });
     }
+=======
+      response = withCORS(response, origin || undefined);
+    }
 
-    return response;
+    // Continue with Clerk middleware for auth
+    return clerkMiddleware(async (auth, req) => {
+      // Public routes don't need authentication
+      if (isPublicRoute(req)) return response;
+
+      // Protect all other routes
+      const authObj = await auth();
+      if (!authObj.userId) {
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+      return response;
+    })(request, event);
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
+
   } catch (error) {
+<<<<<<< HEAD
     logger.error('Middleware error', {
       action: 'middleware_error',
       error: error instanceof Error ? error.message : 'Unknown error',
+=======
+    const duration = Date.now() - startTime;
+    const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
+    logger.error('Middleware error', errorObj, {
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
       metadata: {
-        path: request.nextUrl.pathname,
-        method: request.method,
-      },
+        pathname: request.nextUrl.pathname,
+        duration
+      }
     });
 
+<<<<<<< HEAD
     return new NextResponse(
       JSON.stringify({ error: 'Internal server error' }),
       {
@@ -121,6 +149,11 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
     );
   }
 });
+=======
+    return NextResponse.next();
+  }
+}
+>>>>>>> 4c7427516ec379efe95f6307e1a1240940f103a6
 
 export const config = {
   matcher: [

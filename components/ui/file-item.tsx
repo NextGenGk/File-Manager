@@ -18,14 +18,14 @@ interface FileItemProps {
 
 const getFileType = (contentType: string | null) => {
   if (!contentType) return 'File'
-
+  
   if (contentType.startsWith('image/')) return 'Image'
   if (contentType.startsWith('video/')) return 'Video'
   if (contentType.startsWith('audio/')) return 'Audio'
   if (contentType.includes('pdf')) return 'PDF'
   if (contentType.includes('text')) return 'Text'
   if (contentType.includes('zip') || contentType.includes('rar')) return 'Archive'
-
+  
   return 'File'
 }
 
