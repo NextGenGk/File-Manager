@@ -14,7 +14,15 @@ export default function UserSyncer() {
         const syncUser = async () => {
             try {
                 setError(null);
-                await createOrUpdateUser(user);
+                // Convert UserResource to the expected User format
+                const userForSync = {
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    emailAddresses: user.emailAddresses,
+                    imageUrl: user.imageUrl,
+                };
+                await createOrUpdateUser(userForSync as any);
                 setSynced(true);
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Unknown sync error';

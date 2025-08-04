@@ -3,7 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { config } from './config'
+import { config, isProduction } from './config'
 import { logger } from './error-handling'
 
 /**
@@ -75,7 +75,7 @@ export function withCORS(response: NextResponse, origin?: string): NextResponse 
 
   if (origin && allowedOrigins.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin)
-  } else if (!config.isProduction) {
+  } else if (!isProduction) {
     response.headers.set('Access-Control-Allow-Origin', '*')
   }
 

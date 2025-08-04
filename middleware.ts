@@ -1,8 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextFetchEvent } from 'next/server';
 import { validateConfig } from '@/lib/config';
-import { withSecurityHeaders, withRateLimit } from '@/lib/security-middleware';
+import { withSecurityHeaders, withCORS } from '@/lib/security-middleware';
 import { logger } from '@/lib/error-handling';
 
 // Validate configuration on startup
@@ -16,7 +16,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const startTime = Date.now();
 
   try {
@@ -38,73 +38,34 @@ export async function middleware(request: NextRequest) {
     // Apply CORS for API routes
     if (request.nextUrl.pathname.startsWith('/api/')) {
       const origin = request.headers.get('origin');
-
-      // Apply rate limiting to API routes
-      const rateLimitCheck = await checkRateLimit(request);
-      if (!rateLimitCheck.allowed) {
-        return new NextResponse(
-          JSON.stringify({
-            error: 'Rate limit exceeded',
-            retryAfter: rateLimitCheck.retryAfter,
-          }),
-          {
-            status: 429,
-            headers: {
-              'Content-Type': 'application/json',
-              'Retry-After': rateLimitCheck.retryAfter.toString(),
-            },
-          }
-        );
-      }
-
-      // Set CORS headers
-      if (origin) {
-        response.headers.set('Access-Control-Allow-Origin', origin);
-      }
-      response.headers.set(
-        'Access-Control-Allow-Methods',
-        'GET, POST, PUT, DELETE, OPTIONS'
-      );
-      response.headers.set(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, X-API-Key'
-      );
+      response = withCORS(response, origin || undefined);
     }
 
-    // Log request in production
-    if (process.env.NODE_ENV === 'production') {
-      const duration = Date.now() - startTime;
-      logger.info('Request processed', {
-        action: 'request_processed',
-        metadata: {
-          method: request.method,
-          path: request.nextUrl.pathname,
-          duration,
-          status: response.status,
-        },
-      });
-    }
+    // Continue with Clerk middleware for auth
+    return clerkMiddleware(async (auth, req) => {
+      // Public routes don't need authentication
+      if (isPublicRoute(req)) return response;
 
-    return response;
+      // Protect all other routes
+      const authObj = await auth();
+      if (!authObj.userId) {
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
+      return response;
+    })(request, event);
+
   } catch (error) {
-    logger.error('Middleware error', error as Error, {
-      action: 'middleware_error',
+    const duration = Date.now() - startTime;
+    const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
+    logger.error('Middleware error', errorObj, {
       metadata: {
-        path: request.nextUrl.pathname,
-        method: request.method,
-      },
+        pathname: request.nextUrl.pathname,
+        duration
+      }
     });
 
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return NextResponse.next();
   }
-}
-
-async function checkRateLimit(
-  request: NextRequest
-): Promise<{ allowed: boolean; retryAfter: number }> {
-  // Simple in-memory rate limiting for demo
-  // In production, use Redis or a proper rate limiting service
-  return { allowed: true, retryAfter: 0 };
 }
 
 export const config = {
