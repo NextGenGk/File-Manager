@@ -15,7 +15,7 @@ export interface LogContext {
   userId?: string
   requestId?: string
   action?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 class Logger {
@@ -184,7 +184,7 @@ export function handleApiError(error: Error, context?: LogContext): Response {
 /**
  * Async Error Handler Wrapper
  */
-export function asyncHandler<T extends any[], R>(
+export function asyncHandler<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>
 ): (...args: T) => Promise<R> {
   return async (...args: T): Promise<R> => {

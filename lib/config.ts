@@ -32,7 +32,8 @@ export interface AppConfig {
   }
 
   // Security
-  security: {
+  security: {  // Define specific properties instead of empty object
+    jwtSecret: string
     // Removed encryptionKey as it's not used anywhere in the codebase
   }
 

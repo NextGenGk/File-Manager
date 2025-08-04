@@ -30,7 +30,7 @@ export default function UserSyncer() {
                     emailAddresses: user.emailAddresses,
                     imageUrl: user.imageUrl,
                 };
-                await createOrUpdateUser(userForSync as any);
+                await createOrUpdateUser(userForSync);
                 setSynced(true);
                 setRetryCount(0);
                 console.log('User synced successfully');
