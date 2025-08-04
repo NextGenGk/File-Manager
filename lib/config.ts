@@ -105,8 +105,8 @@ export const config: AppConfig = {
   },
 
   security: {
-    jwtSecret: validateRequired(process.env.JWT_SECRET, 'JWT_SECRET'),
-    encryptionKey: validateRequired(process.env.ENCRYPTION_KEY, 'ENCRYPTION_KEY'),
+    jwtSecret: process.env.JWT_SECRET || 'default-jwt-secret-for-development-only',
+    encryptionKey: process.env.ENCRYPTION_KEY || 'default32characterencryptionkey12',
   },
 
   rateLimit: {
