@@ -93,9 +93,9 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error('Middleware error', {
+    const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
+    logger.error('Middleware error', errorObj, {
       action: 'middleware_error',
-      error: error instanceof Error ? error.message : 'Unknown error',
       metadata: {
         pathname: request.nextUrl.pathname,
         duration
