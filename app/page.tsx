@@ -39,7 +39,7 @@ export default function HomePage() {
         />
         <div className="pointer-events-none absolute inset-0 bg-black [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
 
-        <div className="relative z-20 px-6 pt-24 pb-12">
+        <div className="relative z-20 px-6 pt-32 pb-12">
           <div className="w-full max-w-3xl mx-auto space-y-6">
             {/* Breadcrumb Navigation */}
             <div className="mb-4">

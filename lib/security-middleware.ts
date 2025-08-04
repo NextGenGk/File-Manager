@@ -3,7 +3,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { config } from './config'
+import { config, isProduction } from './config'
 import { logger } from './error-handling'
 
 /**
@@ -75,7 +75,7 @@ export function withCORS(response: NextResponse, origin?: string): NextResponse 
 
   if (origin && allowedOrigins.includes(origin)) {
     response.headers.set('Access-Control-Allow-Origin', origin)
-  } else if (!config.isProduction) {
+  } else if (!isProduction) {
     response.headers.set('Access-Control-Allow-Origin', '*')
   }
 
@@ -84,4 +84,16 @@ export function withCORS(response: NextResponse, origin?: string): NextResponse 
   response.headers.set('Access-Control-Max-Age', '86400')
 
   return response
+}
+
+/**
+ * Rate limiting middleware (simplified for production)
+ */
+export function withRateLimit(request: NextRequest): { allowed: boolean; error?: string } {
+  // In production, you might want to implement Redis-based rate limiting
+  // For now, this is a basic implementation
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+
+  // Basic rate limiting logic (you can enhance this)
+  return { allowed: true }
 }

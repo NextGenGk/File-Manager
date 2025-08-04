@@ -7,6 +7,7 @@ import './globals.css'
 import Navbar from '@/components/navbar'
 import UserSyncer from '@/components/UserSyncer'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import AuthWrapper from '@/components/auth-wrapper'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -76,9 +77,11 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
           <ErrorBoundary>
-            <UserSyncer />
-            <Navbar />
-            {children}
+            <AuthWrapper>
+              <UserSyncer />
+              <Navbar />
+              {children}
+            </AuthWrapper>
           </ErrorBoundary>
         </body>
       </html>

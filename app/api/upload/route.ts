@@ -4,14 +4,14 @@ import { auth, currentUser } from '@clerk/nextjs/server';
 import { getUserStorageInfo, updateUserStorageUsed, createUserFile, createOrUpdateUser } from '@/lib/supabase-storage';
 
 const client = new S3Client({
-    region: process.env.AWS_REGION || process.env.S3_REGION as string,
+    region: process.env.AWS_REGION || 'us-east-1',
     credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID as string,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY as string
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
     }
 });
 
-const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'general-s3-ui';
+const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!;
 
 export async function POST(request: NextRequest) {
     try {

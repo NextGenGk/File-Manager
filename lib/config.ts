@@ -33,8 +33,7 @@ export interface AppConfig {
 
   // Security
   security: {
-    jwtSecret: string
-    encryptionKey: string
+    // Removed encryptionKey as it's not used anywhere in the codebase
   }
 
   // Rate Limiting
@@ -86,8 +85,8 @@ export const config: AppConfig = {
   APP_URL: process.env.APP_URL || 'http://localhost:3001',
 
   supabase: {
-    url: validateRequired(process.env.SUPABASE_URL, 'SUPABASE_URL'),
-    anonKey: validateRequired(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY'),
+    url: validateRequired(process.env.NEXT_PUBLIC_SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    anonKey: validateRequired(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     serviceRoleKey: validateRequired(process.env.SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
   },
 
@@ -105,8 +104,7 @@ export const config: AppConfig = {
   },
 
   security: {
-    jwtSecret: validateRequired(process.env.JWT_SECRET, 'JWT_SECRET'),
-    encryptionKey: validateRequired(process.env.ENCRYPTION_KEY, 'ENCRYPTION_KEY'),
+    // Removed encryptionKey as it's not used anywhere in the codebase
   },
 
   rateLimit: {
@@ -128,11 +126,6 @@ export const config: AppConfig = {
 // Validate configuration on module load
 export function validateConfig(): void {
   try {
-    // Validate encryption key length
-    if (config.security.encryptionKey.length !== 32) {
-      throw new ConfigurationError('ENCRYPTION_KEY must be exactly 32 characters long')
-    }
-
     // Validate URLs
     try {
       new URL(config.supabase.url)
@@ -143,7 +136,7 @@ export function validateConfig(): void {
 
     console.log('✅ Configuration validated successfully')
   } catch (error) {
-    console.error('❌ Configuration validation failed:', error.message)
+    console.error('❌ Configuration validation failed:', (error as Error).message)
     if (config.NODE_ENV === 'production') {
       process.exit(1)
     }

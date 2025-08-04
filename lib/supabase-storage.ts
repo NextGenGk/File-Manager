@@ -61,15 +61,42 @@ export async function createOrUpdateUser(clerkUser: User) {
   const userName = clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'user'
 
   try {
+    // Validate required data
+    if (!clerkUser.id) {
+      throw new Error('Clerk user ID is required')
+    }
+
+    if (!clerkUser.emailAddresses?.[0]?.emailAddress) {
+      throw new Error('User email address is required')
+    }
+
+    console.log('Creating/updating user with Clerk ID:', clerkUser.id)
+
     // Check if user exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: fetchError } = await supabase
       .from('users')
       .select('*')
       .eq('clerk_id', clerkUser.id)
       .single()
 
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 is "not found" error, which is expected for new users
+      const errorDetails = {
+        code: fetchError.code,
+        message: fetchError.message,
+        details: fetchError.details,
+        hint: fetchError.hint,
+        clerkUserId: clerkUser.id,
+        timestamp: new Date().toISOString()
+      };
+      console.error('Error fetching existing user:', errorDetails);
+      console.error('Raw Supabase error:', JSON.stringify(fetchError, null, 2));
+      throw new Error(`Database fetch error: ${fetchError.message || 'Unknown database error'}`);
+    }
+
     let user
     if (existingUser) {
+      console.log('Updating existing user:', existingUser.id)
       // Update existing user
       const { data, error } = await supabase
         .from('users')
@@ -83,13 +110,17 @@ export async function createOrUpdateUser(clerkUser: User) {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error updating user:', error)
+        throw new Error(`Failed to update user: ${error.message}`)
+      }
       user = data
     } else {
-      // Create new user
+      console.log('Creating new user for Clerk ID:', clerkUser.id)
+      // Use upsert to avoid duplicate key errors
       const { data, error } = await supabase
         .from('users')
-        .insert({
+        .upsert({
           clerk_id: clerkUser.id,
           email: clerkUser.emailAddresses[0]?.emailAddress || '',
           first_name: clerkUser.firstName,
@@ -98,20 +129,33 @@ export async function createOrUpdateUser(clerkUser: User) {
           bucket_prefix: bucketPrefix,
           storage_quota: 2 * 1024 * 1024 * 1024, // 2GB default quota
           storage_used: 0,
-        })
+        }, { onConflict: 'clerk_id' })
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error creating user:', error)
+        throw new Error(`Failed to create user: ${error.message}`)
+      }
       user = data
 
       // Create S3 directory for new users
-      await createUserS3Directory(clerkUser.id, bucketPrefix)
+      console.log('Creating S3 directory for new user:', bucketPrefix)
+      const s3Success = await createUserS3Directory(clerkUser.id, bucketPrefix)
+      if (!s3Success) {
+        console.warn('Failed to create S3 directory, but user was created successfully')
+      }
     }
 
+    console.log('User sync completed successfully:', user.id)
     return user
   } catch (error) {
-    throw error
+    console.error('createOrUpdateUser failed:', error)
+    if (error instanceof Error) {
+      throw error
+    } else {
+      throw new Error(`Unknown error during user sync: ${JSON.stringify(error)}`)
+    }
   }
 }
 
@@ -268,5 +312,18 @@ export async function getUserFiles(clerkId: string) {
     return files || []
   } catch (error) {
     throw error
+  }
+}
+
+export async function getAllFiles() {
+  try {
+    const { data: files, error } = await supabase
+      .from('user_files')
+      .select('*')
+      .order('uploaded_at', { ascending: false });
+    if (error) throw error;
+    return files || [];
+  } catch (error) {
+    throw error;
   }
 }

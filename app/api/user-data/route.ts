@@ -105,10 +105,10 @@ async function getUserOverview(user: any, userId: string) {
       created_at: user.created_at
     },
     storage: {
-      used: storageInfo.used,
-      quota: storageInfo.quota,
-      available: storageInfo.available,
-      usage_percentage: Math.round((storageInfo.used / storageInfo.quota) * 100)
+      used: storageInfo?.used || 0,
+      quota: storageInfo?.quota || 0,
+      available: storageInfo?.available || 0,
+      usage_percentage: storageInfo ? Math.round((storageInfo.used / storageInfo.quota) * 100) : 0
     },
     stats: {
       total_files: totalFiles,
@@ -122,8 +122,8 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
   const storageInfo = await getUserStorageInfo(userId)
   const bucketName = process.env.S3_BUCKET_NAME || 'general-s3-ui'
 
-  // Build S3 prefix
-  const s3Prefix = storageInfo.prefix + (prefix ? `/${prefix}` : '')
+  // Build S3 prefix with null check
+  const s3Prefix = (storageInfo?.prefix || '') + (prefix ? `/${prefix}` : '')
 
   // Get files from S3
   const command = new ListObjectsV2Command({
@@ -146,7 +146,7 @@ async function getUserFiles(user: any, userId: string, prefix: string, limit: nu
     const dbFile = dbFiles?.find(f => f.s3_key === s3File.Key)
 
     const fileData: any = {
-      key: s3File.Key?.replace(`${storageInfo.prefix}/`, ''),
+      key: s3File.Key?.replace(`${storageInfo?.prefix || ''}/`, ''),
       size: s3File.Size,
       last_modified: s3File.LastModified,
       etag: s3File.ETag,

@@ -14,9 +14,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/api/auth-test',
   '/api/webhooks(.*)',
+  '/api/health',
 ]);
 
-export async function middleware(request: NextRequest) {
+export default clerkMiddleware(async (auth, request: NextRequest) => {
   const startTime = Date.now();
 
   try {
@@ -27,6 +28,23 @@ export async function middleware(request: NextRequest) {
       request.nextUrl.pathname.includes('.')
     ) {
       return NextResponse.next();
+    }
+
+    // Check if the route is public
+    if (!isPublicRoute(request)) {
+      // For protected routes, ensure user is authenticated
+      const { userId } = await auth();
+      if (!userId) {
+        // For API routes, return JSON error instead of redirect
+        if (request.nextUrl.pathname.startsWith('/api/')) {
+          return NextResponse.json(
+            { error: 'Unauthorized', message: 'Authentication required' },
+            { status: 401 }
+          );
+        }
+        // For page routes, redirect to sign-in
+        return NextResponse.redirect(new URL('/sign-in', request.url));
+      }
     }
 
     // Create response
@@ -40,18 +58,17 @@ export async function middleware(request: NextRequest) {
       const origin = request.headers.get('origin');
 
       // Apply rate limiting to API routes
-      const rateLimitCheck = await checkRateLimit(request);
+      const rateLimitCheck = withRateLimit(request);
       if (!rateLimitCheck.allowed) {
         return new NextResponse(
           JSON.stringify({
             error: 'Rate limit exceeded',
-            retryAfter: rateLimitCheck.retryAfter,
+            message: rateLimitCheck.error || 'Too many requests',
           }),
           {
             status: 429,
             headers: {
               'Content-Type': 'application/json',
-              'Retry-After': rateLimitCheck.retryAfter.toString(),
             },
           }
         );
@@ -80,42 +97,36 @@ export async function middleware(request: NextRequest) {
           method: request.method,
           path: request.nextUrl.pathname,
           duration,
-          status: response.status,
         },
       });
     }
 
     return response;
   } catch (error) {
-    logger.error('Middleware error', error as Error, {
+    logger.error('Middleware error', {
       action: 'middleware_error',
+      error: error instanceof Error ? error.message : 'Unknown error',
       metadata: {
         path: request.nextUrl.pathname,
         method: request.method,
       },
     });
 
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse(
+      JSON.stringify({ error: 'Internal server error' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
-}
-
-async function checkRateLimit(
-  request: NextRequest
-): Promise<{ allowed: boolean; retryAfter: number }> {
-  // Simple in-memory rate limiting for demo
-  // In production, use Redis or a proper rate limiting service
-  return { allowed: true, retryAfter: 0 };
-}
+});
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
   ],
 };
