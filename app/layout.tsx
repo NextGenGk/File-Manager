@@ -65,8 +65,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  
+  // Check if Clerk key is properly configured
+  if (!publishableKey || publishableKey.length < 50) {
+    console.warn('⚠️ Clerk publishable key is missing or incomplete. Please check your .env file.');
+  }
+
   return (
     <ClerkProvider
+      publishableKey={publishableKey}
       appearance={{
         elements: {
           formButtonPrimary: 'bg-black hover:bg-gray-800',
