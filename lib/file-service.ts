@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { Tables } from './db-types'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 
 const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!
 
@@ -311,10 +311,12 @@ export async function renameFile(
       const newS3Key = `${user.bucket_prefix}/${newPath}`
 
       // Read the object from S3
-      const { Body, ContentType } = await s3Client.send({
+      const getResponse = await s3Client.send(new GetObjectCommand({
         Bucket: DEFAULT_BUCKET,
         Key: oldS3Key
-      })
+      }))
+      
+      const { Body, ContentType } = getResponse
 
       // Upload to new key
       await s3Client.send(new PutObjectCommand({
@@ -417,10 +419,12 @@ export async function moveFile(
       const newS3Key = `${user.bucket_prefix}/${newPath}`
 
       // Read the object from S3
-      const { Body, ContentType } = await s3Client.send({
+      const getResponse = await s3Client.send(new GetObjectCommand({
         Bucket: DEFAULT_BUCKET,
         Key: oldS3Key
-      })
+      }))
+      
+      const { Body, ContentType } = getResponse
 
       // Upload to new key
       await s3Client.send(new PutObjectCommand({

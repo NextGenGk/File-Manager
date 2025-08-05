@@ -4,7 +4,7 @@ import { Upload } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 
 interface UploadButtonProps {
-  onUploadComplete?: (file: any) => void
+onUploadComplete?: (file: unknown) => void
   currentPath?: string
   disabled?: boolean
 }
@@ -39,11 +39,7 @@ export function UploadButton({
       if (!response.ok) {
         const data = await response.json()
         if (response.status === 413) {
-          toast({
-            title: 'Storage Quota Exceeded',
-            description: 'You have reached your storage limit. Delete some files or upgrade your plan.',
-            variant: 'destructive',
-          })
+          toast('Storage Quota Exceeded: You have reached your storage limit. Delete some files or upgrade your plan.')
         } else {
           throw new Error(data.error || 'Failed to upload file')
         }
@@ -52,21 +48,14 @@ export function UploadButton({
 
       const data = await response.json()
 
-      toast({
-        title: 'File Uploaded',
-        description: `${file.name} has been uploaded successfully.`,
-      })
+      toast(`File Uploaded: ${file.name} has been uploaded successfully.`)
 
       if (onUploadComplete) {
         onUploadComplete(data.file)
       }
     } catch (error) {
       console.error('Upload error:', error)
-      toast({
-        title: 'Upload Failed',
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
-        variant: 'destructive',
-      })
+      toast(`Upload Failed: ${error instanceof Error ? error.message : 'An unexpected error occurred'}`)
     } finally {
       setIsUploading(false)
       // Reset the file input
@@ -89,6 +78,7 @@ export function UploadButton({
       <Button
         onClick={() => fileInputRef.current?.click()}
         disabled={isUploading || disabled}
+        className="px-3 py-2 bg-blue-500 text-white rounded flex items-center"
       >
         <Upload className="mr-2 h-4 w-4" />
         {isUploading ? 'Uploading...' : 'Upload'}

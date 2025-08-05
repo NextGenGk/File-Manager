@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { getUserStorageInfo, updateUserStorageUsed, createUserFile, createOrUpdateUser } from '@/lib/supabase-storage';
 
 const client = new S3Client({
@@ -15,7 +15,8 @@ const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!;
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+const user = await currentUser();
+        const userId = user?.id;
 
         if (!userId) {
             return NextResponse.json({
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
             }, { status: 401 });
         }
 
-        const user = await currentUser();
+        // user variable is already defined above, just check if it exists
         if (!user) {
             return NextResponse.json({
                 error: 'User not found',

@@ -1,6 +1,6 @@
-import { clerkMiddleware, createRouteMatcher, auth } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import type { NextRequest, NextFetchEvent } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { validateConfig } from '@/lib/config';
 import { withSecurityHeaders, withCORS, withRateLimit } from '@/lib/security-middleware';
 import { logger } from '@/lib/error-handling';
@@ -17,8 +17,8 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
 ]);
 
-// Rename middleware function to avoid Next.js picking it up as default
-export async function mainMiddleware(request: NextRequest, event: NextFetchEvent) {
+// Use the correct Clerk middleware pattern
+export default clerkMiddleware(async (auth, request: NextRequest) => {
   // Exit early if pathname is not available
   if (!request.nextUrl?.pathname) {
     return NextResponse.next();
@@ -119,7 +119,7 @@ export async function mainMiddleware(request: NextRequest, event: NextFetchEvent
       }
     );
   }
-}
+});
 
 export const config = {
   matcher: [
@@ -129,6 +129,3 @@ export const config = {
     '/(api|trpc)(.*)',
   ],
 };
-
-// Only one default export allowed
-export default clerkMiddleware(mainMiddleware);

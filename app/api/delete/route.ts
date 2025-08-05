@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from "next/server";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { deleteUserFile, getUserStorageInfo } from '@/lib/supabase-storage';
@@ -16,7 +16,8 @@ const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_N
 export async function DELETE(request: NextRequest) {
     try {
         // Get authenticated user
-        const { userId } = await auth();
+const user = await currentUser()
+        const userId = user?.id;
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

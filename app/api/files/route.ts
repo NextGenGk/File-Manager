@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
+import { currentUser } from '@clerk/nextjs/server'
 import * as fileService from '@/lib/file-service'
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth()
+    const user = await currentUser()
+    const userId = user?.id
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -26,7 +27,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = auth()
+    const user = await currentUser()
+    const userId = user?.id
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -74,11 +76,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ file: uploadedFile })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in POST /api/files:', error)
 
     // Check for storage quota exceeded
-    if (error.message === 'Storage quota exceeded') {
+    if (error instanceof Error && error.message === 'Storage quota exceeded') {
       return NextResponse.json(
         { error: 'Storage quota exceeded' },
         { status: 413 }

@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { UploadButton } from '@/components/ui/upload-button'
 import { NewFolderDialog } from '@/components/ui/new-folder-dialog'
@@ -62,11 +63,7 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
       setFiles(data.files || [])
     } catch (error) {
       console.error('Error fetching files:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load files',
-        variant: 'destructive',
-      })
+toast('Error: Failed to load files')
     } finally {
       setIsLoading(false)
     }
@@ -127,20 +124,13 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
         throw new Error(data.error || 'Failed to rename file')
       }
 
-      toast({
-        title: 'Success',
-        description: 'File renamed successfully',
-      })
+      toast('File renamed successfully')
 
       setRenameDialogOpen(false)
       fetchFiles()
     } catch (error) {
       console.error('Error renaming file:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to rename file',
-        variant: 'destructive',
-      })
+      toast(`Error: ${error instanceof Error ? error.message : 'Failed to rename file'}`)
     }
   }
 
@@ -164,20 +154,13 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
         throw new Error(data.error || 'Failed to delete file')
       }
 
-      toast({
-        title: 'Success',
-        description: `${fileToDelete.is_folder ? 'Folder' : 'File'} deleted successfully`,
-      })
+      toast(`${fileToDelete.is_folder ? 'Folder' : 'File'} deleted successfully`)
 
       setConfirmDeleteDialogOpen(false)
       fetchFiles()
     } catch (error) {
       console.error('Error deleting file:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete file',
-        variant: 'destructive',
-      })
+      toast(`Error: ${error instanceof Error ? error.message : 'Failed to delete file'}`)
     }
   }
 
@@ -186,14 +169,13 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button
-            variant="outline"
-            size="icon"
             onClick={handleNavigateBack}
             disabled={pathHistory.length === 0}
+            className="px-3 py-2 border border-gray-300 rounded"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
+          <Button onClick={handleRefresh} className="px-3 py-2 border border-gray-300 rounded">
             <RefreshCw className="h-4 w-4" />
           </Button>
           <div className="text-sm text-muted-foreground">
@@ -202,8 +184,8 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
         </div>
         <div className="flex items-center space-x-2">
           <Button
-            variant="outline"
             onClick={() => setNewFolderDialogOpen(true)}
+            className="px-3 py-2 border border-gray-300 rounded flex items-center"
           >
             <FolderPlus className="mr-2 h-4 w-4" />
             New Folder
@@ -252,12 +234,12 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
 
               <div className="mt-2 flex w-full justify-end">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                  <DropdownMenuTrigger>
+                    <Button className="p-1 hover:bg-gray-100 rounded">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleOpenRenameDialog(file)}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Rename
@@ -303,12 +285,12 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
               onClick={() => setRenameDialogOpen(false)}
+              className="px-4 py-2 border border-gray-300 rounded"
             >
               Cancel
             </Button>
-            <Button type="button" onClick={handleRename}>
+            <Button type="button" onClick={handleRename} className="px-4 py-2 bg-blue-500 text-white rounded">
               Rename
             </Button>
           </DialogFooter>
@@ -334,12 +316,12 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
               onClick={() => setConfirmDeleteDialogOpen(false)}
+              className="px-4 py-2 border border-gray-300 rounded"
             >
               Cancel
             </Button>
-            <Button type="button" variant="destructive" onClick={handleDelete}>
+            <Button type="button" onClick={handleDelete} className="px-4 py-2 bg-red-500 text-white rounded">
               Delete
             </Button>
           </DialogFooter>

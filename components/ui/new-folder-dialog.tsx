@@ -8,7 +8,7 @@ import { Folder } from 'lucide-react'
 interface NewFolderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onFolderCreated?: (folder: any) => void
+onFolderCreated?: (folder: unknown) => void
   currentPath?: string
 }
 
@@ -25,11 +25,7 @@ export function NewFolderDialog({
     e.preventDefault()
 
     if (!folderName.trim()) {
-      toast({
-        title: 'Folder name required',
-        description: 'Please enter a name for the folder',
-        variant: 'destructive',
-      })
+      toast('Folder name required: Please enter a name for the folder')
       return
     }
 
@@ -53,10 +49,7 @@ export function NewFolderDialog({
 
       const data = await response.json()
 
-      toast({
-        title: 'Folder Created',
-        description: `${folderName} has been created successfully.`,
-      })
+      toast(`Folder Created: ${folderName} has been created successfully.`)
 
       setFolderName('')
       onOpenChange(false)
@@ -66,11 +59,7 @@ export function NewFolderDialog({
       }
     } catch (error) {
       console.error('Create folder error:', error)
-      toast({
-        title: 'Create Folder Failed',
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
-        variant: 'destructive',
-      })
+      toast(`Create Folder Failed: ${error instanceof Error ? error.message : 'An unexpected error occurred'}`)
     } finally {
       setIsCreating(false)
     }
@@ -100,13 +89,13 @@ export function NewFolderDialog({
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isCreating}
+              className="px-4 py-2 border border-gray-300 rounded"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isCreating}>
+            <Button type="submit" disabled={isCreating} className="px-4 py-2 bg-blue-500 text-white rounded">
               {isCreating ? 'Creating...' : 'Create'}
             </Button>
           </DialogFooter>

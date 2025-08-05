@@ -48,17 +48,19 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Experimental features for production
-  experimental: {
-    // Enable modern bundling
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  // Turbopack configuration (moved from experimental.turbo)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
+  },
+
+  // Experimental features for production
+  experimental: {
+    // Other experimental features can go here
   },
 
   // Environment variables validation
