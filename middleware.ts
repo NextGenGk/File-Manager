@@ -41,6 +41,16 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
       return NextResponse.next();
     }
 
+    // Explicitly allow SSO callback routes without any restrictions
+    if (
+      pathname.startsWith('/sso-callback') ||
+      pathname.startsWith('/oauth-callback') ||
+      pathname.startsWith('/auth/callback')
+    ) {
+      console.log(`🔓 Allowing unrestricted access to SSO callback route: ${pathname}`);
+      return NextResponse.next();
+    }
+
     // Check if the route is public
     if (!isPublicRoute(request)) {
       // For protected routes, ensure user is authenticated
