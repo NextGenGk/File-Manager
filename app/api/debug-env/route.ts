@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
             hasS3SecretKey: !!process.env.S3_SECRET_ACCESS_KEY,
             hasAWSBucket: !!process.env.AWS_S3_BUCKET_NAME,
             hasS3Bucket: !!process.env.S3_BUCKET_NAME,
-
+            
             // Show actual values for debugging (safe to show these)
             regionValue: process.env.AWS_REGION || process.env.S3_REGION || 'NOT_SET',
             bucketValue: process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'NOT_SET',
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             message: 'Environment Configuration Check',
             config,
-            recommendation: !config.hasAWSBucket && !config.hasS3Bucket
+            recommendation: !config.hasAWSBucket && !config.hasS3Bucket 
                 ? 'MISSING: You need to set AWS_S3_BUCKET_NAME or S3_BUCKET_NAME in your .env.local file'
                 : 'Bucket configuration looks good'
         });

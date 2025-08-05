@@ -33,19 +33,19 @@ const startTime = Date.now()
 export async function GET(request: NextRequest): Promise<NextResponse> {
   requestCount++
   const timestamp = new Date().toISOString()
-
+  
   try {
     // Check individual services
     const services = await checkServices()
-
+    
     // Calculate overall health
     const unhealthyServices = Object.values(services).filter(status => status === 'unhealthy')
     let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy'
-
+    
     if (unhealthyServices.length > 0) {
       overallStatus = unhealthyServices.length === Object.keys(services).length ? 'unhealthy' : 'degraded'
     }
-
+    
     // Memory metrics
     const memoryUsage = process.memoryUsage()
     const memoryMetrics = {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       total: Math.round(memoryUsage.heapTotal / 1024 / 1024), // MB
       percentage: Math.round((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100)
     }
-
+    
     const healthStatus: HealthStatus = {
       status: overallStatus,
       timestamp,
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         requestCount
       }
     }
-
+    
     // Log health check in production
     if (config.NODE_ENV === 'production') {
       logger.info('Health check performed', {
@@ -77,14 +77,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         }
       })
     }
-
+    
     const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 200 : 503
-
+    
     return NextResponse.json(healthStatus, { status: statusCode })
-
+    
   } catch (error) {
     logger.error('Health check failed', error as Error)
-
+    
     return NextResponse.json(
       {
         status: 'unhealthy',
@@ -103,7 +103,7 @@ async function checkServices(): Promise<HealthStatus['services']> {
     storage: 'unhealthy',
     auth: 'unhealthy'
   }
-
+  
   // Check Supabase database
   try {
     const { createClient } = await import('@supabase/supabase-js')
@@ -113,7 +113,7 @@ async function checkServices(): Promise<HealthStatus['services']> {
   } catch {
     services.database = 'unhealthy'
   }
-
+  
   // Check S3 storage (basic connectivity)
   try {
     const { S3Client, HeadBucketCommand } = await import('@aws-sdk/client-s3')
@@ -124,13 +124,13 @@ async function checkServices(): Promise<HealthStatus['services']> {
         secretAccessKey: config.aws.secretAccessKey
       }
     })
-
+    
     await s3Client.send(new HeadBucketCommand({ Bucket: config.aws.bucketName }))
     services.storage = 'healthy'
   } catch {
     services.storage = 'unhealthy'
   }
-
+  
   // Check Clerk auth (basic connectivity)
   try {
     // Simple check - if we can import Clerk without errors, consider it healthy
@@ -139,7 +139,7 @@ async function checkServices(): Promise<HealthStatus['services']> {
   } catch {
     services.auth = 'unhealthy'
   }
-
+  
   return services
 }
 
@@ -148,7 +148,7 @@ export async function HEAD(request: NextRequest): Promise<NextResponse> {
   try {
     const services = await checkServices()
     const isReady = Object.values(services).every(status => status === 'healthy')
-
+    
     return new NextResponse(null, { status: isReady ? 200 : 503 })
   } catch {
     return new NextResponse(null, { status: 503 })

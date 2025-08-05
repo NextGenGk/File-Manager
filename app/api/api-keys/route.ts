@@ -109,12 +109,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error creating API key:', error)
-
+    
     // If the error is already a NextResponse (from validateAuth), return it directly
     if (error instanceof NextResponse) {
       return error
     }
-
+    
     // Log the actual error details for debugging
     if (error instanceof Error) {
       console.error('Error details:', error.message, error.stack)
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
+    
     return NextResponse.json(
       { error: 'Failed to create API key' },
       { status: 500 }

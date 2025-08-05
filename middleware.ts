@@ -17,15 +17,23 @@ const isPublicRoute = createRouteMatcher([
   '/api/health',
 ]);
 
-export async function middleware(request: NextRequest, event: NextFetchEvent) {
+// Rename middleware function to avoid Next.js picking it up as default
+export async function mainMiddleware(request: NextRequest, event: NextFetchEvent) {
+  // Exit early if pathname is not available
+  if (!request.nextUrl?.pathname) {
+    return NextResponse.next();
+  }
+
   const startTime = Date.now();
 
   try {
+    const { pathname } = request.nextUrl;
+
     // Skip middleware for static files and internal Next.js routes
     if (
-      request.nextUrl.pathname.startsWith('/_next/') ||
-      request.nextUrl.pathname.startsWith('/api/_') ||
-      request.nextUrl.pathname.includes('.')
+      pathname.startsWith('/_next/') ||
+      pathname.startsWith('/api/_') ||
+      pathname.includes('.')
     ) {
       return NextResponse.next();
     }
@@ -36,7 +44,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
       const { userId } = await auth();
       if (!userId) {
         // For API routes, return JSON error instead of redirect
-        if (request.nextUrl.pathname.startsWith('/api/')) {
+        if (pathname.startsWith('/api/')) {
           return NextResponse.json(
             { error: 'Unauthorized', message: 'Authentication required' },
             { status: 401 }
@@ -54,7 +62,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     response = withSecurityHeaders(response);
 
     // Apply CORS for API routes
-    if (request.nextUrl.pathname.startsWith('/api/')) {
+    if (pathname.startsWith('/api/')) {
       const origin = request.headers.get('origin');
 
       // Apply rate limiting to API routes
@@ -85,19 +93,20 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         action: 'request_processed',
         metadata: {
           method: request.method,
-          path: request.nextUrl.pathname,
+          path: pathname,
           duration,
         },
       });
     }
 
+    return response;
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorObj = error instanceof Error ? error : new Error('Unknown middleware error');
     logger.error('Middleware error', errorObj, {
       action: 'middleware_error',
       metadata: {
-        pathname: request.nextUrl.pathname,
+        pathname: request?.nextUrl?.pathname ?? 'unknown',
         duration
       }
     });
@@ -120,3 +129,6 @@ export const config = {
     '/(api|trpc)(.*)',
   ],
 };
+
+// Only one default export allowed
+export default clerkMiddleware(mainMiddleware);

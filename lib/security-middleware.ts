@@ -93,7 +93,7 @@ export function withRateLimit(request: NextRequest): { allowed: boolean; error?:
   // In production, you might want to implement Redis-based rate limiting
   // For now, this is a basic implementation
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-
+  
   // Basic rate limiting logic (you can enhance this)
   return { allowed: true }
 }

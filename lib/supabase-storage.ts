@@ -1,6 +1,13 @@
+/**
+ * @deprecated Use the dedicated modules instead: 
+ * - user-service.ts for user operations
+ * - file-service.ts for file operations
+ */
+
 import { supabase } from './supabase'
 import { User } from '@clerk/nextjs/server'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { Tables } from './db-types'
 
 // S3 Configuration
 const s3Client = new S3Client({
@@ -12,9 +19,6 @@ const s3Client = new S3Client({
 })
 
 const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!
-
-// Type definitions
-type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
 
 interface Database {
   public: {

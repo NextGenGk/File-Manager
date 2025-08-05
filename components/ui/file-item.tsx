@@ -16,16 +16,29 @@ interface FileItemProps {
   onDelete: () => void
 }
 
+const getFileIcon = (contentType: string | null) => {
+  if (!contentType) return ''
+
+  if (contentType.startsWith('image/')) return '️'
+  if (contentType.startsWith('video/')) return ''
+  if (contentType.startsWith('audio/')) return ''
+  if (contentType.includes('pdf')) return ''
+  if (contentType.includes('text')) return ''
+  if (contentType.includes('zip') || contentType.includes('rar')) return ''
+
+  return ''
+}
+
 const getFileType = (contentType: string | null) => {
   if (!contentType) return 'File'
-  
+
   if (contentType.startsWith('image/')) return 'Image'
   if (contentType.startsWith('video/')) return 'Video'
   if (contentType.startsWith('audio/')) return 'Audio'
   if (contentType.includes('pdf')) return 'PDF'
   if (contentType.includes('text')) return 'Text'
   if (contentType.includes('zip') || contentType.includes('rar')) return 'Archive'
-  
+
   return 'File'
 }
 
@@ -52,6 +65,7 @@ export default function FileItem({ file, index, onDownload, onDelete }: FileItem
       <div className="flex items-center space-x-4 flex-1 min-w-0">
         <div className="w-12 h-8 bg-white/10 rounded-md flex items-center justify-center">
           <span className="text-xs font-medium text-white/80">
+            <span className="mr-1">{getFileIcon(file.content_type)}</span>
             {getFileType(file.content_type)}
           </span>
         </div>
