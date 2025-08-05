@@ -1,26 +1,40 @@
-import {NextRequest, NextResponse} from "next/server";
-import {S3Client, ListObjectsV2Command} from "@aws-sdk/client-s3";
-import { getAllFiles } from '@/lib/supabase-storage';
+import { NextResponse } from "next/server";
+import { getUserFiles } from '@/lib/supabase-storage';
+import { auth } from '@clerk/nextjs/server';
 
-const client = new S3Client({
-    region: process.env.AWS_REGION || process.env.S3_REGION as string,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID as string,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY as string
-    }
-});
-
-const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME || 'general-s3-ui';
-
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        // Public: fetch all files
-        const files = await getAllFiles();
-        return NextResponse.json({ files });
-    } catch (error) {
+        // Get authenticated user ID from Clerk
+        const { userId } = await auth();
+        
+        if (!userId) {
+            console.warn('Unauthorized access attempt to /api/objects');
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Authentication required' },
+                { status: 401 }
+            );
+        }
+
+        console.log(`Fetching files for user: ${userId}`);
+        
+        // Fetch authenticated user's files from Supabase
+        const files = await getUserFiles(userId);
+        
+        console.log(`Found ${files?.length || 0} files for user ${userId}`);
+        
         return NextResponse.json({
+            success: true,
+            files: files || [],
+            count: files?.length || 0
+        });
+        
+    } catch (error) {
+        console.error('Error in GET /api/objects:', error);
+        
+        return NextResponse.json({
+            success: false,
             error: 'Failed to fetch files',
-            details: error instanceof Error ? error.message : error
+            message: error instanceof Error ? error.message : 'Unknown error occurred'
         }, { status: 500 });
     }
 }
