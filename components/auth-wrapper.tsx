@@ -2,7 +2,7 @@
 
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SignIn } from '@clerk/nextjs'
 import { cn } from "@/lib/utils"
 
@@ -13,14 +13,67 @@ interface AuthWrapperProps {
 export default function AuthWrapper({ children }: AuthWrapperProps) {
   const { isSignedIn, isLoaded, user } = useUser()
   const router = useRouter()
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+
+  console.log('🔍 AuthWrapper Debug:', { isSignedIn, isLoaded, hasUser: !!user, retryCount })
+
+  // Set a timeout for Clerk loading
+  useEffect(() => {
+    if (!isLoaded) {
+      const timeout = setTimeout(() => {
+        console.error('⚠️ Clerk loading timeout after 15 seconds')
+        setLoadingTimeout(true)
+      }, 15000)
+
+      return () => clearTimeout(timeout)
+    } else {
+      setLoadingTimeout(false)
+    }
+  }, [isLoaded, retryCount])
 
   // Show loading state while Clerk is initializing
   if (!isLoaded) {
+    console.log('⏳ Clerk is not loaded yet...')
+    
+    if (loadingTimeout) {
+      return (
+        <div className="min-h-screen bg-black flex items-center justify-center">
+          <div className="text-white text-center max-w-md">
+            <div className="text-red-400 text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold mb-4">Authentication Loading Failed</h2>
+            <p className="text-gray-300 mb-4">
+              Clerk authentication failed to load. This usually means:
+            </p>
+            <ul className="text-left text-sm text-gray-400 mb-6 space-y-1">
+              <li>• Clerk API keys are missing or invalid</li>
+              <li>• Network connectivity issues</li>
+              <li>• Clerk service is down</li>
+            </ul>
+            <button 
+              onClick={() => {
+                setLoadingTimeout(false)
+                setRetryCount(prev => prev + 1)
+                window.location.reload()
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Retry (Attempt #{retryCount + 1})
+            </button>
+          </div>
+        </div>
+      )
+    }
+    
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">
+        <div className="text-white text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading...</p>
+          <p>Loading authentication...</p>
+          <p className="text-sm text-gray-400 mt-2">
+            {retryCount > 0 && `Retry attempt #${retryCount} - `}
+            If this persists, check your Clerk configuration
+          </p>
         </div>
       </div>
     )

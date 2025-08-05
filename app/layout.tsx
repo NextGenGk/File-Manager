@@ -72,7 +72,32 @@ export default function RootLayout({
   
   // Check if Clerk key is properly configured
   if (!publishableKey || publishableKey.length < 50) {
-    console.warn('⚠️ Clerk publishable key is missing or incomplete. Please check your .env file.');
+    console.error('🚨 Clerk publishable key is missing or incomplete!');
+    console.error('📋 Key length:', publishableKey?.length || 0);
+    console.error('🔧 Please get the complete key from https://dashboard.clerk.com/');
+    
+    // Show error page instead of broken app
+    return (
+      <html lang="en">
+        <body className="bg-black text-white min-h-screen flex items-center justify-center">
+          <div className="max-w-md text-center p-8">
+            <h1 className="text-2xl font-bold mb-4">Configuration Error</h1>
+            <p className="mb-4">Clerk authentication is not properly configured.</p>
+            <div className="text-left bg-gray-900 p-4 rounded mb-4">
+              <p className="text-sm mb-2">To fix this:</p>
+              <ol className="text-sm list-decimal list-inside space-y-1">
+                <li>Go to <a href="https://dashboard.clerk.com" className="text-blue-400 underline">dashboard.clerk.com</a></li>
+                <li>Select your project</li>
+                <li>Go to API Keys section</li>
+                <li>Copy the complete Publishable Key</li>
+                <li>Update your .env file</li>
+              </ol>
+            </div>
+            <p className="text-sm text-gray-400">Current key length: {publishableKey?.length || 0} (should be 100+)</p>
+          </div>
+        </body>
+      </html>
+    )
   }
 
   return (
