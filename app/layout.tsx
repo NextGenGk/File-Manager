@@ -30,6 +30,9 @@ export const metadata: Metadata = {
   creator: 'XyStorage',
   publisher: 'XyStorage',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  other: {
+    'Content-Security-Policy': "frame-src 'self' https://*.clerk.dev https://*.clerk.com https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.dev https://*.clerk.com https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com;"
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',

@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'DENY'
+            value: 'SAMEORIGIN'
           },
           {
             key: 'X-Content-Type-Options',
@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.dev https://*.clerk.com https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com https://js.stripe.com; frame-src 'self' https://*.clerk.dev https://*.clerk.com https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com https://js.stripe.com; connect-src 'self' https://*.clerk.dev https://*.clerk.com https://api.clerk.dev https://api.clerk.com; img-src 'self' data: https: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;"
           }
         ]
       }
