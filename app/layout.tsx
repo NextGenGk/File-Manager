@@ -8,6 +8,7 @@ import Navbar from '@/components/navbar'
 import UserSyncer from '@/components/UserSyncer'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import AuthWrapper from '@/components/auth-wrapper'
+import ForceUserSync from '@/components/ForceUserSync'
 
 const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 if (!publishableKey) {
@@ -88,6 +89,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <AuthWrapper>
               <UserSyncer />
+              <ForceUserSync />
               <Navbar />
               {children}
             </AuthWrapper>
