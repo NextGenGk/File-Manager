@@ -36,8 +36,8 @@ export default function UserSyncer() {
                 console.log('User synced successfully');
             } catch (err) {
                 // Better error logging and serialization
-                const errorMessage = err instanceof Error ? err.message : 'Unknown sync error';
-                const errorStack = err instanceof Error ? err.stack : undefined;
+                const errorMessage = err instanceof Error ? err.message : 'Unknown sync error'
+                const errorStack = err instanceof Error ? err.stack : undefined
                 const errorDetails = {
                     message: errorMessage,
                     stack: errorStack,
@@ -48,6 +48,15 @@ export default function UserSyncer() {
 
                 console.error('Sync error details:', errorDetails);
                 console.error('Original error object:', err);
+
+                // Set synced to true to prevent blocking the user, even if sync failed
+                // The webhook will handle syncing when properly configured
+                if (retryCount >= 2) {
+                    console.warn('User sync failed, but allowing user to proceed. Webhook should handle sync.');
+                    setSynced(true);
+                    setError(null);
+                    return;
+                }
 
                 setError(errorMessage);
 
@@ -61,7 +70,9 @@ export default function UserSyncer() {
                         setError(null);
                     }, retryDelay);
                 } else {
-                    console.error('Max retry attempts reached for user sync');
+                    console.error('Max retry attempts reached for user sync, allowing user to proceed');
+                    setSynced(true); // Allow user to proceed
+                    setError(null);
                 }
             }
         };
