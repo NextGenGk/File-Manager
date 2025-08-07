@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import GlassCard from '@/components/ui/glass-card'
 import LoadingSpinner from '@/components/ui/loading'
@@ -34,7 +34,7 @@ export default function FileManager() {
     // Add folder navigation logic here when implementing folders
   }
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     if (!user) return
 
     try {
@@ -48,11 +48,11 @@ export default function FileManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchFiles()
-  }, [user])
+  }, [fetchFiles])
 
   const handleDownload = async (file: FileItem) => {
     try {

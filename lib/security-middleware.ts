@@ -4,7 +4,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { config, isProduction } from './config'
-import { logger } from './error-handling'
 
 /**
  * Security headers middleware
@@ -89,10 +88,9 @@ export function withCORS(response: NextResponse, origin?: string): NextResponse 
 /**
  * Rate limiting middleware (simplified for production)
  */
-export function withRateLimit(request: NextRequest): { allowed: boolean; error?: string } {
+export function withRateLimit(): { allowed: boolean; error?: string } {
   // In production, you might want to implement Redis-based rate limiting
   // For now, this is a basic implementation
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
   
   // Basic rate limiting logic (you can enhance this)
   return { allowed: true }

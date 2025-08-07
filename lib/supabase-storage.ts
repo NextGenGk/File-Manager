@@ -20,27 +20,6 @@ const s3Client = new S3Client({
 
 const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!
 
-interface Database {
-  public: {
-    Tables: {
-      users: {
-        Row: {
-          id: string
-          clerk_id: string
-          email: string
-          first_name: string | null
-          last_name: string | null
-          image_url: string | null
-          bucket_prefix: string
-          storage_quota: number
-          storage_used: number
-          created_at: string
-          updated_at: string
-        }
-      }
-    }
-  }
-}
 
 export async function createUserS3Directory(userId: string, bucketPrefix: string): Promise<boolean> {
   try {
@@ -55,7 +34,7 @@ export async function createUserS3Directory(userId: string, bucketPrefix: string
     }))
 
     return true
-  } catch (error) {
+  } catch {
     return false
   }
 }
@@ -70,7 +49,6 @@ interface PartialClerkUser {
 
 export async function createOrUpdateUser(clerkUser: User | PartialClerkUser) {
   const bucketPrefix = `user-${clerkUser.id}`
-  const userName = clerkUser.firstName || clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0] || 'user'
 
   try {
     // Validate required data

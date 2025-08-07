@@ -1,7 +1,6 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { SignIn } from '@clerk/nextjs'
 import { cn } from "@/lib/utils"
@@ -12,7 +11,6 @@ interface AuthWrapperProps {
 
 export default function AuthWrapper({ children }: AuthWrapperProps) {
   const { isSignedIn, isLoaded, user } = useUser()
-  const router = useRouter()
   const [loadingTimeout, setLoadingTimeout] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
 

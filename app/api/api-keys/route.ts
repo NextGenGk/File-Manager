@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateAuth } from '@/lib/auth-helpers'
 import { createApiKey, getUserApiKeys, revokeApiKey, deleteApiKey } from '@/lib/api-key-helpers'
 import { getUserByClerkId } from '@/lib/supabase-storage'
-import { ApiError } from '@/lib/api-error-handler'
 
 // GET /api/api-keys - List user's API keys
 export async function GET() {

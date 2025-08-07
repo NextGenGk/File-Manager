@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         return await getUserFiles(user, auth.userId, prefix, limit, includeContent)
 
       case 'folders':
-        return await getUserFolders(user, auth.userId)
+        return await getUserFolders(user)
 
       case 'storage':
         return await getUserStorageStats(auth.userId)
@@ -199,7 +199,7 @@ async function getUserFiles(user: Record<string, unknown>, userId: string, prefi
   })
 }
 
-async function getUserFolders(user: Record<string, unknown>, userId: string) {
+async function getUserFolders(user: Record<string, unknown>) {
   const { data: folders, error } = await supabase
     .from('user_folders')
     .select('*')

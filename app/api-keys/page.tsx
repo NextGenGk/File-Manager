@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import GlassCard from '@/components/ui/glass-card'
 import LoadingSpinner from '@/components/ui/loading'
@@ -36,7 +36,7 @@ export default function ApiKeysPage() {
     { label: 'API Keys', icon: '🔑', isActive: true }
   ]
 
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     if (!user) return
 
     try {
@@ -45,16 +45,16 @@ export default function ApiKeysPage() {
         const data = await response.json()
         setApiKeys(data.apiKeys || []) // Changed from data.keys to data.apiKeys
       }
-    } catch (error) {
+    } catch {
       // Handle error silently
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     fetchApiKeys()
-  }, [user])
+  }, [fetchApiKeys])
 
   const createApiKey = async () => {
     if (!newKeyName.trim()) return
@@ -83,7 +83,7 @@ export default function ApiKeysPage() {
         const error = await response.json()
         alert(`Failed to create API key: ${error.error || error.message}`)
       }
-    } catch (error) {
+    } catch {
       alert('Failed to create API key')
     } finally {
       setCreating(false)
@@ -104,7 +104,7 @@ export default function ApiKeysPage() {
       } else {
         alert('Failed to delete API key')
       }
-    } catch (error) {
+    } catch {
       alert('Failed to delete API key')
     }
   }

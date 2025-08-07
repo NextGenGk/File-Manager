@@ -13,12 +13,6 @@ const s3Client = new S3Client({
   },
 })
 
-interface FileData {
-  name: string
-  path: string
-  size: number
-  is_folder: boolean
-}
 
 export async function getUserByClerkId(clerkId: string): Promise<Tables<'users'> | null> {
   const { data, error } = await supabase

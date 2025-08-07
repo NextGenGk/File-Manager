@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 export default function HomePage() {
   const { isSignedIn, user, isLoaded } = useUser()
   const [refreshFiles, setRefreshFiles] = useState(0)
-  const [currentPath, setCurrentPath] = useState(['Home'])
+  const [currentPath] = useState(['Home'])
 
   const breadcrumbItems = currentPath.map((path, index) => ({
     label: path,

@@ -79,7 +79,7 @@ export default clerkMiddleware(async (auth, request: NextRequest) => {
       const origin = request.headers.get('origin');
 
       // Apply rate limiting to API routes
-      const rateLimitCheck = withRateLimit(request);
+      const rateLimitCheck = withRateLimit()
       if (!rateLimitCheck.allowed) {
         return new NextResponse(
           JSON.stringify({

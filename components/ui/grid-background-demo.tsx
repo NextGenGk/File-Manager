@@ -1,11 +1,9 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 import { SignInButton, useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
 
 export default function GridBackgroundDemo() {
   const { isSignedIn } = useUser();
-  const router = useRouter();
 
   const handleDashboardClick = () => {
     // Refresh the page to show the dashboard view

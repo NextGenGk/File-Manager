@@ -2,7 +2,7 @@
  * Health Check API Endpoint for Production Monitoring
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { config } from '@/lib/config'
 import { logger } from '@/lib/error-handling'
 
@@ -30,7 +30,7 @@ interface HealthStatus {
 let requestCount = 0
 const startTime = Date.now()
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(): Promise<NextResponse> {
   requestCount++
   const timestamp = new Date().toISOString()
   
@@ -144,7 +144,7 @@ async function checkServices(): Promise<HealthStatus['services']> {
 }
 
 // Readiness probe for Kubernetes/Docker
-export async function HEAD(request: NextRequest): Promise<NextResponse> {
+export async function HEAD(): Promise<NextResponse> {
   try {
     const services = await checkServices()
     const isReady = Object.values(services).every(status => status === 'healthy')
