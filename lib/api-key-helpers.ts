@@ -86,11 +86,15 @@ export async function validateApiKey(apiKey: string): Promise<{ userId: string; 
     .eq('is_active', true)
     .single()
 
-  if (error || !data) return null
+  if (error || !data) {
+    console.error('API key validation error:', error);
+    return null;
+  }
 
   // Check if key has expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    return null
+    console.log('API key expired:', data.expires_at);
+    return null;
   }
 
   // Update last_used timestamp
@@ -99,18 +103,25 @@ export async function validateApiKey(apiKey: string): Promise<{ userId: string; 
     .update({ last_used: new Date().toISOString() })
     .eq('api_key', hashedKey)
 
-  // Extract clerk_id from the users object returned by Supabase
-  // Define proper type for the joined users data from Supabase
-  type UserRecord = {
-    id: string;
-    clerk_id: string;
-  };
+  // Handle the Supabase join result structure safely
+  console.log('API key validation data:', data);
+  
+  // The join result structure from Supabase
+  const user = data.users;
+  if (!user || !Array.isArray(user) || user.length === 0 || !user[0]) {
+    console.error('No user found for API key, user_id:', data.user_id);
+    return null;
+  }
 
-  // Cast with proper type information
-  const user = data.users[0] as UserRecord;
+  const clerkId = user[0].clerk_id;
+  if (!clerkId) {
+    console.error('No clerk_id found for user:', user[0]);
+    return null;
+  }
+
   return {
-    userId: user.clerk_id,
-    permissions: data.permissions
+    userId: clerkId,
+    permissions: data.permissions || ['read']
   }
 }
 

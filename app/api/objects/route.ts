@@ -1,26 +1,32 @@
-import { NextResponse } from "next/server";
-import { getUserFiles } from '@/lib/supabase-storage';
-import { auth } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from "next/server";
+import { validateAuthOrApiKey, hasPermission } from '@/lib/auth-helpers';
+import { listFiles } from '@/lib/file-service';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-        // Get authenticated user ID from Clerk
-        const { userId } = await auth();
+        // Debug: Log all headers
+        console.log('=== /api/objects Debug Info ===');
+        console.log('Headers:', Object.fromEntries(request.headers.entries()));
         
-        if (!userId) {
-            console.warn('Unauthorized access attempt to /api/objects');
+        // Support both API key and Clerk session authentication
+        const auth = await validateAuthOrApiKey(request);
+        
+        console.log('Auth result:', auth);
+        
+        if (!hasPermission(auth.permissions, 'read')) {
+            console.log('Missing read permission:', auth.permissions);
             return NextResponse.json(
-                { error: 'Unauthorized', message: 'Authentication required' },
-                { status: 401 }
+                { error: 'Unauthorized', message: 'Read permission required' },
+                { status: 403 }
             );
         }
 
-        console.log(`Fetching files for user: ${userId}`);
+        console.log(`Fetching files for user: ${auth.userId}`);
         
-        // Fetch authenticated user's files from Supabase
-        const files = await getUserFiles(userId);
+        // Fetch authenticated user's files using the new file service
+        const files = await listFiles(auth.userId);
         
-        console.log(`Found ${files?.length || 0} files for user ${userId}`);
+        console.log(`Found ${files?.length || 0} files for user ${auth.userId}`);
         
         return NextResponse.json({
             success: true,
@@ -29,7 +35,9 @@ export async function GET() {
         });
         
     } catch (error) {
+        console.error('=== /api/objects ERROR ===');
         console.error('Error in GET /api/objects:', error);
+        console.error('Request headers:', Object.fromEntries(request.headers.entries()));
         
         return NextResponse.json({
             success: false,

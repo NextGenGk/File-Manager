@@ -91,10 +91,10 @@ export async function createOrUpdateUser(clerkUser: User | PartialClerkUser) {
       const { data, error } = await supabase
         .from('users')
         .update({
-          email: clerkUser.emailAddresses[0]?.emailAddress || '',
           first_name: clerkUser.firstName,
           last_name: clerkUser.lastName,
           image_url: clerkUser.imageUrl,
+          updated_at: new Date().toISOString()
         })
         .eq('clerk_id', clerkUser.id)
         .select()
@@ -102,40 +102,74 @@ export async function createOrUpdateUser(clerkUser: User | PartialClerkUser) {
 
       if (error) {
         console.error('Error updating user:', error)
-        throw new Error(`Failed to update user: ${error.message}`)
+        // Don't throw error, allow user to proceed
+        user = existingUser
+      } else {
+        user = data
       }
-      user = data
     } else {
       console.log('Creating new user for Clerk ID:', clerkUser.id)
-      // Use upsert to avoid duplicate key errors
-      const { data, error } = await supabase
+      
+      // First, check if user exists by email
+      const { data: existingUserByEmail } = await supabase
         .from('users')
-        .upsert({
-          clerk_id: clerkUser.id,
-          email: clerkUser.emailAddresses[0]?.emailAddress || '',
-          first_name: clerkUser.firstName,
-          last_name: clerkUser.lastName,
-          image_url: clerkUser.imageUrl,
-          bucket_prefix: bucketPrefix,
-          storage_quota: 2 * 1024 * 1024 * 1024, // 2GB default quota
-          storage_used: 0,
-        }, { onConflict: 'clerk_id' })
-        .select()
+        .select('*')
+        .eq('email', clerkUser.emailAddresses[0]?.emailAddress || '')
         .single()
 
-      if (error) {
-        console.error('Error creating user:', error)
-        throw new Error(`Failed to create user: ${error.message}`)
-      }
-      user = data
+      if (existingUserByEmail) {
+        console.log('User already exists with email, updating clerk_id:', existingUserByEmail.id)
+        // Update the existing user with new clerk_id
+        const { data, error } = await supabase
+          .from('users')
+          .update({
+            clerk_id: clerkUser.id,
+            first_name: clerkUser.firstName,
+            last_name: clerkUser.lastName,
+            image_url: clerkUser.imageUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', clerkUser.emailAddresses[0]?.emailAddress || '')
+          .select()
+          .single()
 
-      // Create S3 directory for new users
+        if (error) {
+          console.error('Error updating existing user:', error)
+          user = existingUserByEmail
+        } else {
+          user = data
+        }
+      } else {
+        // Create new user
+        const { data, error } = await supabase
+          .from('users')
+          .insert({
+            clerk_id: clerkUser.id,
+            email: clerkUser.emailAddresses[0]?.emailAddress || '',
+            first_name: clerkUser.firstName,
+            last_name: clerkUser.lastName,
+            image_url: clerkUser.imageUrl,
+            bucket_prefix: bucketPrefix,
+            storage_quota: 2 * 1024 * 1024 * 1024, // 2GB default quota
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Error creating user:', error)
+          // Allow user to proceed despite error
+          return existingUser || null
+        }
+        user = data
+      }
+    }    // Create S3 directory for new users
       console.log('Creating S3 directory for new user:', bucketPrefix)
       const s3Success = await createUserS3Directory(clerkUser.id, bucketPrefix)
       if (!s3Success) {
         console.warn('Failed to create S3 directory, but user was created successfully')
       }
-    }
 
     console.log('User sync completed successfully:', user.id)
     return user

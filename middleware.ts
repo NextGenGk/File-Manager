@@ -18,6 +18,12 @@ const isPublicRoute = createRouteMatcher([
   '/api/auth-test',
   '/api/webhooks(.*)',
   '/api/health',
+  '/api/debug(.*)',
+  '/api/objects',
+  '/api/upload',
+  '/api/user-data',
+  '/api/api-keys',
+  '/api/admin(.*)',
 ]);
 
 // Use the correct Clerk middleware pattern

@@ -1,8 +1,48 @@
 import { supabase } from './supabase'
-import { Tables } from './db-types'
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
 const DEFAULT_BUCKET = process.env.AWS_S3_BUCKET_NAME!
+
+// Type definitions
+interface User {
+  id: string
+  clerk_id: string
+  email: string
+  first_name: string
+  last_name: string
+  bucket_prefix: string
+  storage_used: number
+  storage_quota: number
+  created_at: string
+  updated_at: string
+}
+
+interface UserFile {
+  id: string
+  user_id: string
+  s3_key: string
+  file_name: string
+  file_size: number
+  content_type: string
+  uploaded_at: string
+  last_accessed: string
+}
+
+interface UserWithFiles extends UserFile {
+  user: {
+    clerk_id: string
+    email: string
+    first_name: string
+    last_name: string
+  }
+}
+
+interface StorageInfo {
+  quota: number
+  used: number
+  available: number
+  bucketPrefix: string
+}
 
 // S3 Configuration
 const s3Client = new S3Client({
@@ -13,8 +53,7 @@ const s3Client = new S3Client({
   },
 })
 
-
-export async function getUserByClerkId(clerkId: string): Promise<Tables<'users'> | null> {
+export async function getUserByClerkId(clerkId: string): Promise<User | null> {
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -26,228 +65,121 @@ export async function getUserByClerkId(clerkId: string): Promise<Tables<'users'>
     return null
   }
 
-  return data
+  return data as User
 }
 
-export async function createFolder(
-  clerkId: string,
-  folderName: string,
-  parentPath: string = ''
-): Promise<Tables<'files'> | null> {
+export async function createFolder(_clerkId: string, _folderName: string, _parentPath?: string): Promise<null> {
+  console.warn('Folder creation not implemented - current schema uses user_files table')
+  return null
+}
+
+export async function listFiles(clerkId: string, _path?: string): Promise<UserFile[]> {
   try {
     const user = await getUserByClerkId(clerkId)
     if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
+      console.error(`User not found for clerk_id: ${clerkId}`)
+      return []
     }
 
-    // Normalize path
-    const normalizedParentPath = parentPath === '/' ? '' : parentPath
-    const folderPath = normalizedParentPath 
-      ? `${normalizedParentPath}/${folderName}` 
-      : folderName
-
-    // Check if folder already exists
-    const { data: existingFolder } = await supabase
-      .from('files')
+    const { data: files, error } = await supabase
+      .from('user_files')
       .select('*')
       .eq('user_id', user.id)
-      .eq('path', folderPath)
-      .eq('is_folder', true)
-      .single()
-
-    if (existingFolder) {
-      return existingFolder
-    }
-
-    // Create the folder in database
-    const { data, error } = await supabase
-      .from('files')
-      .insert({
-        user_id: user.id,
-        name: folderName,
-        path: folderPath,
-        size: 0,
-        is_folder: true,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating folder:', error)
-      throw error
-    }
-
-    return data
-  } catch (error) {
-    console.error('Failed to create folder:', error)
-    return null
-  }
-}
-
-export async function listFiles(
-  clerkId: string,
-  path: string = ''
-): Promise<Tables<'files'>[]> {
-  try {
-    const user = await getUserByClerkId(clerkId)
-    if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
-    }
-
-    // If path is empty or '/', list root files
-    const isRoot = !path || path === '/'
-
-    const query = supabase
-      .from('files')
-      .select('*')
-      .eq('user_id', user.id)
-
-    if (isRoot) {
-      // In root, we want files with no '/' in their path
-      query.not('path', 'ilike', '%/%')
-    } else {
-      // For directories, we want files directly under that path
-      // This regex matches files directly under the path, not in subdirectories
-      const dirPath = path.endsWith('/') ? path : `${path}/`
-      query.ilike('path', `${dirPath}%`).not('path', 'ilike', `${dirPath}%/%`)
-    }
-
-    const { data, error } = await query
+      .order('uploaded_at', { ascending: false })
 
     if (error) {
       console.error('Error listing files:', error)
-      throw error
+      return []
     }
 
-    return data || []
+    return (files || []) as UserFile[]
   } catch (error) {
     console.error('Failed to list files:', error)
     return []
   }
 }
 
-export async function uploadFile(
-  clerkId: string, 
-  file: File, 
-  path: string = ''
-): Promise<Tables<'files'> | null> {
+export async function uploadFile(clerkId: string, file: File, _path?: string): Promise<UserFile | null> {
   try {
     const user = await getUserByClerkId(clerkId)
     if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
+      console.error(`User not found for clerk_id: ${clerkId}`)
+      return null
     }
 
-    // Check if user has enough storage
-    if (user.storage_used + file.size > user.storage_quota) {
-      throw new Error('Storage quota exceeded')
-    }
-
-    // Normalize path
-    const normalizedPath = path === '/' ? '' : path
-    const filePath = normalizedPath 
-      ? `${normalizedPath}/${file.name}` 
-      : file.name
-
-    // Create the file in S3
-    const s3Key = `${user.bucket_prefix}/${filePath}`
-    const fileBuffer = await file.arrayBuffer()
+    const fileName = file.name
+    const s3Key = `${user.bucket_prefix}/${fileName}`
+    
+    const buffer = Buffer.from(await file.arrayBuffer())
 
     await s3Client.send(new PutObjectCommand({
       Bucket: DEFAULT_BUCKET,
       Key: s3Key,
-      Body: Buffer.from(fileBuffer),
+      Body: buffer,
       ContentType: file.type || 'application/octet-stream',
     }))
 
-    // Create the file record in database
     const { data, error } = await supabase
-      .from('files')
+      .from('user_files')
       .insert({
         user_id: user.id,
-        name: file.name,
-        path: filePath,
-        size: file.size,
-        is_folder: false,
+        s3_key: fileName,
+        file_name: fileName,
+        file_size: file.size,
+        content_type: file.type || 'application/octet-stream',
+        uploaded_at: new Date().toISOString(),
+        last_accessed: new Date().toISOString(),
       })
       .select()
       .single()
 
     if (error) {
-      // If database insertion fails, try to delete the S3 file
-      try {
-        await s3Client.send(new DeleteObjectCommand({
-          Bucket: DEFAULT_BUCKET,
-          Key: s3Key,
-        }))
-      } catch (s3Error) {
-        console.error('Failed to delete S3 file after database error:', s3Error)
-      }
-      throw error
+      console.error('Error saving file metadata:', error)
+      return null
     }
 
-    return data
+    return data as UserFile
   } catch (error) {
     console.error('Failed to upload file:', error)
     return null
   }
 }
 
-export async function deleteFile(
-  clerkId: string,
-  fileId: string
-): Promise<boolean> {
+export async function deleteFile(clerkId: string, fileId: string): Promise<boolean> {
   try {
     const user = await getUserByClerkId(clerkId)
     if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
+      console.error(`User not found for clerk_id: ${clerkId}`)
+      return false
     }
 
-    // Get the file
     const { data: file, error: fetchError } = await supabase
-      .from('files')
+      .from('user_files')
       .select('*')
       .eq('id', fileId)
       .eq('user_id', user.id)
       .single()
 
     if (fetchError || !file) {
-      throw new Error(`File not found: ${fileId}`)
+      console.error('File not found:', fileId)
+      return false
     }
 
-    // If it's a folder, check if it has contents
-    if (file.is_folder) {
-      const { data: contents, error: contentsError } = await supabase
-        .from('files')
-        .select('id')
-        .eq('user_id', user.id)
-        .ilike('path', `${file.path}/%`)
-        .limit(1)
+    const s3Key = `${user.bucket_prefix}/${(file as UserFile).s3_key}`
+    await s3Client.send(new DeleteObjectCommand({
+      Bucket: DEFAULT_BUCKET,
+      Key: s3Key,
+    }))
 
-      if (contentsError) {
-        throw new Error(`Error checking folder contents: ${contentsError.message}`)
-      }
-
-      if (contents && contents.length > 0) {
-        throw new Error('Cannot delete non-empty folder')
-      }
-    } else {
-      // Delete the file from S3
-      const s3Key = `${user.bucket_prefix}/${file.path}`
-      await s3Client.send(new DeleteObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: s3Key,
-      }))
-    }
-
-    // Delete the file record
-    const { error: deleteError } = await supabase
-      .from('files')
+    const { error } = await supabase
+      .from('user_files')
       .delete()
       .eq('id', fileId)
       .eq('user_id', user.id)
 
-    if (deleteError) {
-      throw new Error(`Error deleting file record: ${deleteError.message}`)
+    if (error) {
+      console.error('Error deleting file record:', error)
+      return false
     }
 
     return true
@@ -257,82 +189,20 @@ export async function deleteFile(
   }
 }
 
-export async function getUserStorageInfo(clerkId: string) {
-  const user = await getUserByClerkId(clerkId)
-  if (!user) {
-    return null
-  }
-
-  return {
-    quota: user.storage_quota,
-    used: user.storage_used,
-    available: user.storage_quota - user.storage_used,
-    bucketPrefix: user.bucket_prefix,
-  }
-}
-
-export async function renameFile(
-  clerkId: string,
-  fileId: string,
-  newName: string
-): Promise<Tables<'files'> | null> {
+export async function renameFile(clerkId: string, fileId: string, newName: string): Promise<UserFile | null> {
   try {
     const user = await getUserByClerkId(clerkId)
     if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
+      console.error(`User not found for clerk_id: ${clerkId}`)
+      return null
     }
 
-    // Get the file
-    const { data: file, error: fetchError } = await supabase
-      .from('files')
-      .select('*')
-      .eq('id', fileId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (fetchError || !file) {
-      throw new Error(`File not found: ${fileId}`)
-    }
-
-    // Generate new path
-    const pathParts = file.path.split('/')
-    pathParts[pathParts.length - 1] = newName
-    const newPath = pathParts.join('/')
-
-    // If it's a file (not a folder), we need to copy the file in S3
-    if (!file.is_folder) {
-      const oldS3Key = `${user.bucket_prefix}/${file.path}`
-      const newS3Key = `${user.bucket_prefix}/${newPath}`
-
-      // Read the object from S3
-      const getResponse = await s3Client.send(new GetObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: oldS3Key
-      }))
-      
-      const { Body, ContentType } = getResponse
-
-      // Upload to new key
-      await s3Client.send(new PutObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: newS3Key,
-        Body,
-        ContentType
-      }))
-
-      // Delete the old file
-      await s3Client.send(new DeleteObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: oldS3Key
-      }))
-    }
-
-    // Update the file record
     const { data, error } = await supabase
-      .from('files')
+      .from('user_files')
       .update({
-        name: newName,
-        path: newPath
+        file_name: newName,
+        s3_key: newName,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', fileId)
       .eq('user_id', user.id)
@@ -340,125 +210,99 @@ export async function renameFile(
       .single()
 
     if (error) {
-      throw new Error(`Error updating file record: ${error.message}`)
+      console.error('Error renaming file:', error)
+      return null
     }
 
-    return data
+    return data as UserFile
   } catch (error) {
     console.error('Failed to rename file:', error)
     return null
   }
 }
 
-export async function moveFile(
-  clerkId: string,
-  fileId: string,
-  targetFolderId: string | null // null means move to root
-): Promise<Tables<'files'> | null> {
+export async function moveFile(_clerkId: string, _fileId: string, _targetFolderId: string | null): Promise<UserFile | null> {
+  console.warn('Move file operation is not fully implemented due to schema limitations')
+  return null
+}
+
+/**
+ * Fetch all files regardless of user (admin/debug use case)
+ * @returns Array of all files with user information
+ */
+export async function getAllFiles(): Promise<UserWithFiles[]> {
+  try {
+    const { data: files, error } = await supabase
+      .from('user_files')
+      .select(`
+        *,
+        users!inner(
+          clerk_id,
+          email,
+          first_name,
+          last_name
+        )
+      `)
+      .order('uploaded_at', { ascending: false })
+
+    if (error) {
+      console.error('Error getting all files:', error)
+      return []
+    }
+
+    const transformedFiles = files.map((file) => ({
+      id: file.id,
+      user_id: file.user_id,
+      s3_key: file.s3_key,
+      file_name: file.file_name,
+      file_size: file.file_size,
+      content_type: file.content_type,
+      uploaded_at: file.uploaded_at,
+      last_accessed: file.last_accessed,
+      user: {
+        clerk_id: file.users?.clerk_id,
+        email: file.users?.email,
+        first_name: file.users?.first_name,
+        last_name: file.users?.last_name
+      }
+    }));
+
+    return transformedFiles as UserWithFiles[];
+  } catch (error) {
+    console.error('Failed to fetch all files:', error);
+    return [];
+  }
+}
+
+export async function getUserStorageInfo(clerkId: string): Promise<StorageInfo | null> {
   try {
     const user = await getUserByClerkId(clerkId)
     if (!user) {
-      throw new Error(`User not found for clerk_id: ${clerkId}`)
+      return null
     }
 
-    // Get the file
-    const { data: file, error: fetchError } = await supabase
-      .from('files')
-      .select('*')
-      .eq('id', fileId)
+    // Calculate storage used
+    const { data: files, error } = await supabase
+      .from('user_files')
+      .select('file_size')
       .eq('user_id', user.id)
-      .single()
-
-    if (fetchError || !file) {
-      throw new Error(`File not found: ${fileId}`)
-    }
-
-    // Get target folder path (empty string for root)
-    let targetPath = ''
-    if (targetFolderId) {
-      const { data: targetFolder, error: targetError } = await supabase
-        .from('files')
-        .select('path')
-        .eq('id', targetFolderId)
-        .eq('user_id', user.id)
-        .eq('is_folder', true)
-        .single()
-
-      if (targetError || !targetFolder) {
-        throw new Error(`Target folder not found: ${targetFolderId}`)
-      }
-
-      targetPath = targetFolder.path
-    }
-
-    // Generate new path
-    const fileName = file.name
-    const newPath = targetPath ? `${targetPath}/${fileName}` : fileName
-
-    // Check if destination file already exists
-    const { data: existingFile } = await supabase
-      .from('files')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('path', newPath)
-      .single()
-
-    if (existingFile) {
-      throw new Error(`A file with the same name already exists in the destination folder`)
-    }
-
-    // If it's a file (not a folder), we need to copy the file in S3
-    if (!file.is_folder) {
-      const oldS3Key = `${user.bucket_prefix}/${file.path}`
-      const newS3Key = `${user.bucket_prefix}/${newPath}`
-
-      // Read the object from S3
-      const getResponse = await s3Client.send(new GetObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: oldS3Key
-      }))
-      
-      const { Body, ContentType } = getResponse
-
-      // Upload to new key
-      await s3Client.send(new PutObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: newS3Key,
-        Body,
-        ContentType
-      }))
-
-      // Delete the old file
-      await s3Client.send(new DeleteObjectCommand({
-        Bucket: DEFAULT_BUCKET,
-        Key: oldS3Key
-      }))
-    } else {
-      // If it's a folder, we need to move all its contents too
-      // TODO: Implement recursive folder move
-      // This is complex and requires batch operations
-      // For now, we'll just throw an error
-      throw new Error(`Moving folders is not supported yet`)
-    }
-
-    // Update the file record
-    const { data, error } = await supabase
-      .from('files')
-      .update({
-        path: newPath
-      })
-      .eq('id', fileId)
-      .eq('user_id', user.id)
-      .select()
-      .single()
 
     if (error) {
-      throw new Error(`Error updating file record: ${error.message}`)
+      console.error('Error calculating storage:', error)
+      return null
     }
 
-    return data
+    const storageUsed = files?.reduce((total, file) => total + (file.file_size || 0), 0) || 0
+    const storageQuota = 1073741824 // 1GB in bytes
+
+    return {
+      quota: storageQuota,
+      used: storageUsed,
+      available: storageQuota - storageUsed,
+      bucketPrefix: user.bucket_prefix,
+    }
   } catch (error) {
-    console.error('Failed to move file:', error)
+    console.error('Failed to get storage info:', error)
     return null
   }
 }

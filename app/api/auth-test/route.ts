@@ -68,7 +68,7 @@ export async function GET() {
     })
 
     // Check if user exists in our database
-    let dbUser = await getUserByClerkId(user.id)
+    const dbUser = await getUserByClerkId(user.id)
     
     if (!dbUser) {
       console.log('❌ User not found in database, attempting to create...')
