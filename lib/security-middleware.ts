@@ -19,12 +19,12 @@ export function withSecurityHeaders(response: NextResponse): NextResponse {
   // Content Security Policy
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.kapoorabeer.me https://*.clerk.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https: blob:",
-    "connect-src 'self' https://*.supabase.co https://*.clerk.accounts.dev https://*.clerk.dev",
-    "frame-src https://*.clerk.accounts.dev https://*.clerk.dev"
+    "connect-src 'self' https://*.supabase.co https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.kapoorabeer.me https://*.clerk.com",
+    "frame-src https://*.clerk.accounts.dev https://*.clerk.dev https://clerk.kapoorabeer.me https://*.clerk.com"
   ].join('; ')
 
   response.headers.set('Content-Security-Policy', csp)
