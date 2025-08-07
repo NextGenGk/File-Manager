@@ -137,7 +137,7 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
                 footer: "hidden"
               }
             }}
-            redirectUrl="/"
+            fallbackRedirectUrl="/"
             signUpUrl="/sign-up"
           />
         </div>
